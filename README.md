@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CarPool
 
-## Getting Started
+CarPool is a mobile-first ride sharing MVP focused on repeat commuter routes in Bishkek.
 
-First, run the development server:
+The current product scope is locked in [docs/mvp.md](docs/mvp.md).
+
+## MVP scope
+
+- drivers create planned trips
+- passengers browse and book available seats
+- drivers confirm or reject bookings
+- users receive notifications by email and Telegram
+- both sides can leave reviews after completed trips
+
+The first release does not include online payments, live tracking, native mobile apps, or advanced route matching.
+
+## Stack
+
+- Next.js 16 with App Router and TypeScript
+- Prisma ORM
+- PostgreSQL
+- Tailwind CSS
+- Mapbox for trip points
+- Telegram Bot API and email for notifications
+- Vercel and managed Postgres for deployment
+
+## Local setup
+
+1. Copy `.env.example` to `.env`.
+2. Set a valid `DATABASE_URL`.
+3. Install dependencies with `npm install`.
+4. Generate Prisma client with `npm run prisma:generate`.
+5. Start the app with `npm run dev`.
+
+## Docker setup
+
+Run the full local stack with Docker:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run docker:up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If you only need PostgreSQL for Prisma or DBeaver:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run docker:db
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This starts:
 
-## Learn More
+- Next.js app at `http://localhost:3000`
+- PostgreSQL at `localhost:5432`
 
-To learn more about Next.js, take a look at the following resources:
+Useful commands:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `npm run docker:logs` to follow container logs
+- `npm run docker:down` to stop the stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+On the first `npm run docker:up`, the `app` container installs npm dependencies inside its Docker volume before starting Next.js, so the first startup can take a bit longer than the next ones.
 
-## Deploy on Vercel
+The PostgreSQL container uses these default credentials:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- host: `localhost`
+- port: `5432`
+- database: `carpool`
+- user: `postgres`
+- password: `postgres`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+You can use the same values in DBeaver.
+
+## Scripts
+
+- `npm run dev` starts the development server.
+- `npm run lint` runs ESLint.
+- `npm run prisma:generate` regenerates the Prisma client.
+- `npm run db:push` pushes the Prisma schema to the database.
+- `npm run db:studio` opens Prisma Studio.
+
+## Near-term build order
+
+1. Auth, profile, and vehicle setup
+2. Trip creation, listing, and booking
+3. Notifications, reviews, and admin tools

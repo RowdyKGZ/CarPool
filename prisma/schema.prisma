@@ -1,0 +1,241 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+enum TripStatus {
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum NotificationChannel {
+  EMAIL
+  TELEGRAM
+}
+
+enum NotificationType {
+  BOOKING_REQUEST
+  BOOKING_CONFIRMED
+  BOOKING_REJECTED
+  BOOKING_CANCELLED
+  TRIP_CANCELLED
+  TRIP_REMINDER
+  SYSTEM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id                String         @id @default(cuid())
+  name              String
+  email             String?        @unique
+  phone             String?        @unique
+  telegramUsername  String?        @unique
+  avatarUrl         String?
+  role              UserRole       @default(USER)
+  isVerified        Boolean        @default(false)
+  status            UserStatus     @default(ACTIVE)
+  driverProfile     DriverProfile?
+  vehicles          Vehicle[]
+  tripsDriven       Trip[]         @relation("TripsDriven")
+  bookings          Booking[]
+  reviewsWritten    Review[]       @relation("ReviewsWritten")
+  reviewsReceived   Review[]       @relation("ReviewsReceived")
+  notifications     Notification[]
+  reportsCreated    Report[]       @relation("ReportsCreated")
+  reportsReceived   Report[]       @relation("ReportsReceived")
+  adminNotesWritten AdminNote[]    @relation("AdminNotesWritten")
+  adminNotesAbout   AdminNote[]    @relation("AdminNotesAbout")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model DriverProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  bio             String?
+  licenseVerified Boolean  @default(false)
+  averageRating   Float    @default(0)
+  tripsCompleted  Int      @default(0)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  userId      String
+  make        String
+  model       String
+  color       String
+  plateNumber String   @unique
+  seatsCount  Int
+  photoUrl    String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trips       Trip[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Trip {
+  id            String       @id @default(cuid())
+  driverId      String
+  vehicleId     String
+  fromDistrict  String
+  toDistrict    String
+  pickupLabel   String
+  pickupLat     Float?
+  pickupLng     Float?
+  dropoffLabel  String
+  dropoffLat    Float?
+  dropoffLng    Float?
+  departureAt   DateTime
+  pricePerSeat  Int
+  totalSeats    Int
+  availableSeats Int
+  comment       String?
+  status        TripStatus   @default(PUBLISHED)
+  driver        User         @relation("TripsDriven", fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  bookings      Booking[]
+  reviews       Review[]
+  reports       Report[]
+  adminNotes    AdminNote[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([driverId])
+  @@index([vehicleId])
+  @@index([fromDistrict, toDistrict, departureAt, status])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  tripId          String
+  passengerId     String
+  seatsRequested  Int           @default(1)
+  status          BookingStatus @default(PENDING)
+  note            String?
+  confirmedAt     DateTime?
+  cancelledAt     DateTime?
+  contactSharedAt DateTime?
+  trip            Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  passenger       User          @relation(fields: [passengerId], references: [id], onDelete: Cascade)
+  reports         Report[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([tripId, passengerId])
+  @@index([passengerId, status])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  tripId       String
+  authorId     String
+  targetUserId String
+  rating       Int
+  comment      String?
+  trip         Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  author       User     @relation("ReviewsWritten", fields: [authorId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("ReviewsReceived", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([tripId, authorId, targetUserId])
+  @@index([targetUserId])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  type      NotificationType
+  title     String
+  body      String
+  status    NotificationStatus @default(PENDING)
+  metadata  Json?
+  sentAt    DateTime?
+  readAt    DateTime?
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+
+  @@index([userId, status])
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String
+  targetUserId String?
+  tripId       String?
+  bookingId    String?
+  reason       String
+  note         String?
+  status       ReportStatus @default(OPEN)
+  reporter     User         @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser   User?        @relation("ReportsReceived", fields: [targetUserId], references: [id], onDelete: SetNull)
+  trip         Trip?        @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  booking      Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  adminNotes   AdminNote[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([reporterId, status])
+}
+
+model AdminNote {
+  id        String   @id @default(cuid())
+  adminId   String
+  userId    String?
+  tripId    String?
+  reportId  String?
+  note      String
+  admin     User     @relation("AdminNotesWritten", fields: [adminId], references: [id], onDelete: Cascade)
+  user      User?    @relation("AdminNotesAbout", fields: [userId], references: [id], onDelete: SetNull)
+  trip      Trip?    @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  report    Report?  @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([userId])
+  @@index([tripId])
+  @@index([reportId])
+}

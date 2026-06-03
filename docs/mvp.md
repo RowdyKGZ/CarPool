@@ -1,9 +1,11 @@
 # CarPool MVP
 
 ## Product Goal
+
 CarPool is a mobile-first web MVP for ride sharing inside Bishkek.
 
 Primary scenario:
+
 1. A driver creates a trip.
 2. A passenger finds a trip.
 3. A passenger books a seat.
@@ -16,17 +18,21 @@ The MVP is focused on validating repeatable demand on a small set of routes, not
 ## Launch Scope
 
 ### Initial City and Routes
+
 Launch only in Bishkek and start with 2-3 high-frequency directions:
+
 - TSUM -> Archa-Beshik
 - TSUM -> Jal
 - TSUM -> Asanbay
 
 ### Target Users
+
 - office workers commuting on a regular schedule
 - students with repeated daily routes
 - drivers who already travel and want to offset fuel costs
 
 ### Roles
+
 - passenger
 - driver
 - admin
@@ -36,6 +42,7 @@ A single user can act as both passenger and driver.
 ## MVP Features
 
 ### Included in Version 1
+
 - sign up and sign in
 - user profile
 - driver vehicle profile
@@ -53,6 +60,7 @@ A single user can act as both passenger and driver.
 - email and Telegram notifications
 
 ### Explicitly Out of Scope
+
 - native mobile applications
 - online payments
 - live tracking like taxi apps
@@ -66,6 +74,7 @@ A single user can act as both passenger and driver.
 ## User Flows
 
 ### Driver Flow
+
 1. Sign in.
 2. Complete profile.
 3. Add vehicle.
@@ -77,6 +86,7 @@ A single user can act as both passenger and driver.
 9. Leave review for passengers if needed.
 
 ### Passenger Flow
+
 1. Sign in.
 2. Complete profile.
 3. Browse trips.
@@ -89,12 +99,14 @@ A single user can act as both passenger and driver.
 10. Leave review.
 
 ### Admin Flow
+
 1. Review users, trips, reports, and suspicious activity.
 2. Suspend abusive users.
 3. Hide invalid trips.
 4. Resolve support incidents manually.
 
 ## Core Domain Entities
+
 - User
 - DriverProfile
 - Vehicle
@@ -108,6 +120,7 @@ A single user can act as both passenger and driver.
 ## Draft Data Model
 
 ### User
+
 - id
 - name
 - email
@@ -121,6 +134,7 @@ A single user can act as both passenger and driver.
 - updatedAt
 
 ### DriverProfile
+
 - id
 - userId
 - bio
@@ -129,6 +143,7 @@ A single user can act as both passenger and driver.
 - tripsCompleted
 
 ### Vehicle
+
 - id
 - userId
 - make
@@ -139,6 +154,7 @@ A single user can act as both passenger and driver.
 - photoUrl
 
 ### Trip
+
 - id
 - driverId
 - vehicleId
@@ -160,6 +176,7 @@ A single user can act as both passenger and driver.
 - updatedAt
 
 ### Booking
+
 - id
 - tripId
 - passengerId
@@ -173,6 +190,7 @@ A single user can act as both passenger and driver.
 - updatedAt
 
 ### Review
+
 - id
 - tripId
 - authorId
@@ -184,7 +202,8 @@ A single user can act as both passenger and driver.
 ## Technology Decisions
 
 ### Application Stack
-- Next.js 15
+
+- Next.js 16
 - TypeScript
 - App Router
 - React Server Components where practical
@@ -194,26 +213,33 @@ A single user can act as both passenger and driver.
 - Zod
 
 ### Backend and Database
+
 - Next.js Route Handlers and Server Actions for MVP backend logic
 - Prisma as ORM
 - PostgreSQL as primary database
 
 ### Authentication
+
 Preferred MVP auth:
+
 - Google sign-in
 - email magic link
 
 Phone auth is postponed because it adds cost and operational overhead.
 
 ### Notifications
+
 MVP notifications:
+
 - email for sign-in and transaction events
 - Telegram bot for booking, confirmation, cancellation, and reminder notifications
 
 Postpone SMS and push notifications until there is proven demand.
 
 ### Maps
+
 MVP map choice:
+
 - Mapbox for place picking and trip point display
 
 Map is used only for pickup and dropoff points.
@@ -222,6 +248,7 @@ No live location tracking in version 1.
 ## Infrastructure Plan
 
 ### Hosting
+
 - Vercel for the Next.js application
 - Supabase Postgres or Neon for PostgreSQL
 - Supabase Storage or S3-compatible storage for images
@@ -231,8 +258,10 @@ No live location tracking in version 1.
 - Sentry for error tracking
 
 ### Deployment Shape
+
 For MVP there is no separate backend server.
 The deployment consists of:
+
 1. one Next.js app deployment
 2. one managed PostgreSQL database
 3. external services for storage, email, maps, analytics, and notifications
@@ -240,6 +269,7 @@ The deployment consists of:
 ## Cost Expectations
 
 ### Cheapest Launch Setup
+
 - domain: around 10-15 USD/year for .com
 - Vercel Hobby: 0 USD
 - managed Postgres free tier: 0 USD at very early stage
@@ -248,7 +278,9 @@ The deployment consists of:
 - Mapbox: usually free at low usage
 
 ### Practical MVP Budget
+
 Rough monthly budget after the first real users:
+
 - Vercel Pro: about 20 USD/month
 - database plan: about 20-25 USD/month
 - email: 0-20 USD/month
@@ -257,7 +289,9 @@ Rough monthly budget after the first real users:
 Expected MVP operating cost: about 40-95 USD/month plus domain.
 
 ## Success Metrics
+
 Track these metrics from week 1:
+
 - trips created per day
 - bookings created per day
 - booking confirmation rate
@@ -271,6 +305,7 @@ Track these metrics from week 1:
 ## Build Order
 
 ### Phase 1
+
 - initialize Next.js project
 - set up Prisma and PostgreSQL
 - set up authentication
@@ -278,6 +313,7 @@ Track these metrics from week 1:
 - implement profile and vehicle setup
 
 ### Phase 2
+
 - create trip flow
 - trip listing and filters
 - trip details page
@@ -285,6 +321,7 @@ Track these metrics from week 1:
 - driver confirmation flow
 
 ### Phase 3
+
 - my trips and my bookings
 - completion flow
 - reviews
@@ -293,6 +330,7 @@ Track these metrics from week 1:
 - analytics and error tracking
 
 ## Working Rules
+
 - build mobile-first
 - optimize for speed to launch, not architecture complexity
 - keep logic inside the main Next.js app until product demand is proven
@@ -300,7 +338,9 @@ Track these metrics from week 1:
 - add only features that improve liquidity, trust, or trip completion rate
 
 ## Definition of MVP Done
+
 The MVP is ready when:
+
 - a driver can create a trip in under 2 minutes
 - a passenger can find and book a trip from a phone browser
 - a driver can confirm or reject a booking
@@ -309,4 +349,5 @@ The MVP is ready when:
 - admin can manually intervene when something goes wrong
 
 ## Next Implementation Step
+
 The next technical step after this document is to scaffold the Next.js project and lock the Prisma schema based on the entities above.
