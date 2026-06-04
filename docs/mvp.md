@@ -1,111 +1,118 @@
 # CarPool MVP
 
-## Product Goal
+## Цель продукта
 
-CarPool is a mobile-first web MVP for ride sharing inside Bishkek.
+CarPool - mobile-first web MVP для совместных поездок по Бишкеку.
 
-Primary scenario:
+Основной сценарий:
 
-1. A driver creates a trip.
-2. A passenger finds a trip.
-3. A passenger books a seat.
-4. The driver confirms or rejects the booking.
-5. Both sides receive contact details and notifications.
-6. After the trip both sides can leave a review.
+1. Водитель создает поездку.
+2. Пассажир находит поездку.
+3. Пассажир бронирует место.
+4. Водитель подтверждает или отклоняет бронь.
+5. Обе стороны получают контакты и уведомления.
+6. После поездки обе стороны могут оставить отзыв.
 
-The MVP is focused on validating repeatable demand on a small set of routes, not on building a full taxi-like platform.
+MVP сфокусирован на проверке повторяемого спроса на ограниченном наборе маршрутов, а не на создании еще одной taxi-like платформы.
 
-## Launch Scope
+## Стартовый скоуп
 
-### Initial City and Routes
+### Город и первые маршруты
 
-Launch only in Bishkek and start with 2-3 high-frequency directions:
+Запускаемся только в Бишкеке и начинаем с 2-3 направлений с повторяемым спросом:
 
-- TSUM -> Archa-Beshik
-- TSUM -> Jal
-- TSUM -> Asanbay
+- ЦУМ -> Арча-Бешик
+- ЦУМ -> Джал
+- ЦУМ -> Асанбай
 
-### Target Users
+### Целевая аудитория
 
-- office workers commuting on a regular schedule
-- students with repeated daily routes
-- drivers who already travel and want to offset fuel costs
+- офисные сотрудники с регулярными поездками
+- студенты с повторяющимися ежедневными маршрутами
+- водители, которые и так едут по маршруту и хотят частично компенсировать расходы на топливо
 
-### Roles
+### Роли
 
 - passenger
 - driver
 - admin
 
-A single user can act as both passenger and driver.
+Один пользователь может быть и passenger, и driver.
 
-## MVP Features
+## Язык продукта
 
-### Included in Version 1
+- весь пользовательский интерфейс должен быть на русском языке
+- статусы, ошибки, email и Telegram-уведомления тоже должны быть на русском
+- код, Prisma-модели, доменные сущности и технические идентификаторы остаются на английском
+- продуктовый copy выносится в отдельный словарь, чтобы позже можно было добавить другие языки
 
-- sign up and sign in
-- user profile
-- driver vehicle profile
-- create trip
-- browse and filter trips
-- trip details page
-- book seats
-- accept or reject booking by driver
-- cancel booking
-- cancel trip
-- my trips and my bookings pages
-- trip completion flow
-- ratings and reviews after completed trips
-- basic admin panel for moderation
-- email and Telegram notifications
+## Функции MVP
 
-### Explicitly Out of Scope
+### Входит в первую версию
 
-- native mobile applications
-- online payments
-- live tracking like taxi apps
-- advanced route matching by geometry
-- in-app chat
-- company dashboards
-- dynamic pricing
-- microservices
-- loyalty or referral system
+- sign up и sign in
+- профиль пользователя
+- профиль водителя и машина
+- создание поездки
+- просмотр и фильтрация поездок
+- страница поездки
+- бронирование мест
+- подтверждение или отклонение брони водителем
+- отмена брони
+- отмена поездки
+- страницы моих поездок и моих броней
+- flow завершения поездки
+- рейтинги и отзывы после завершенной поездки
+- базовая админка для модерации
+- email и Telegram-уведомления
 
-## User Flows
+### Явно вне скоупа
 
-### Driver Flow
+- нативные мобильные приложения
+- онлайн-оплата
+- live tracking как в такси
+- сложный matching по геометрии маршрута
+- чат внутри приложения
+- кабинеты компаний
+- динамическое ценообразование
+- микросервисы
+- реферальная система и loyalty-механики
 
-1. Sign in.
-2. Complete profile.
-3. Add vehicle.
-4. Create trip with route, departure time, price, seats, and comment.
-5. Receive booking requests.
-6. Confirm or reject each booking.
-7. Share contact details after confirmation.
-8. Mark trip as completed.
-9. Leave review for passengers if needed.
+## Пользовательские сценарии
 
-### Passenger Flow
+### Сценарий водителя
 
 1. Sign in.
-2. Complete profile.
-3. Browse trips.
-4. Filter by route, date, and time.
-5. Open trip details.
-6. Book one or more seats.
-7. Receive confirmation or rejection.
-8. Contact driver after confirmation.
-9. Mark trip as completed.
-10. Leave review.
+2. Заполнить профиль.
+3. Добавить машину.
+4. Создать поездку с маршрутом, временем выезда, ценой, количеством мест и комментарием.
+5. Получать запросы на бронь.
+6. Подтверждать или отклонять каждую бронь.
+7. Передавать контакты после подтверждения.
+8. Помечать поездку завершенной.
+9. При необходимости оставлять отзыв о пассажире.
 
-### Admin Flow
+### Сценарий пассажира
 
-1. Review users, trips, reports, and suspicious activity.
-2. Suspend abusive users.
-3. Hide invalid trips.
-4. Resolve support incidents manually.
+1. Sign in.
+2. Заполнить профиль.
+3. Смотреть поездки.
+4. Фильтровать по маршруту, дате и времени.
+5. Открывать страницу поездки.
+6. Бронировать одно или несколько мест.
+7. Получать подтверждение или отклонение.
+8. Связываться с водителем после подтверждения.
+9. Помечать поездку завершенной.
+10. Оставлять отзыв.
 
-## Core Domain Entities
+### Сценарий админа
+
+1. Проверять пользователей, поездки, жалобы и подозрительную активность.
+2. Блокировать проблемных пользователей.
+3. Скрывать невалидные поездки.
+4. Разрешать спорные ситуации вручную.
+
+## Основные доменные сущности
 
 - User
 - DriverProfile
@@ -117,7 +124,7 @@ A single user can act as both passenger and driver.
 - Report
 - AdminNote
 
-## Draft Data Model
+## Черновая модель данных
 
 ### User
 
@@ -199,155 +206,155 @@ A single user can act as both passenger and driver.
 - comment
 - createdAt
 
-## Technology Decisions
+## Технологические решения
 
-### Application Stack
+### Стек приложения
 
 - Next.js 16
 - TypeScript
 - App Router
-- React Server Components where practical
+- React Server Components там, где это уместно
 - Tailwind CSS
 - shadcn/ui
 - React Hook Form
 - Zod
 
-### Backend and Database
+### Backend и база данных
 
-- Next.js Route Handlers and Server Actions for MVP backend logic
-- Prisma as ORM
-- PostgreSQL as primary database
+- Next.js Route Handlers и Server Actions для логики MVP
+- Prisma как ORM
+- PostgreSQL как основная база данных
 
-### Authentication
+### Аутентификация
 
-Preferred MVP auth:
+Предпочтительный auth для MVP:
 
 - Google sign-in
 - email magic link
 
-Phone auth is postponed because it adds cost and operational overhead.
+Phone auth отложен, потому что добавляет стоимость и операционную сложность.
 
-### Notifications
+### Уведомления
 
-MVP notifications:
+Уведомления в MVP:
 
-- email for sign-in and transaction events
-- Telegram bot for booking, confirmation, cancellation, and reminder notifications
+- email для sign-in и транзакционных событий
+- Telegram bot для брони, подтверждения, отмены и напоминаний
 
-Postpone SMS and push notifications until there is proven demand.
+SMS и push-уведомления откладываются до подтверждения спроса.
 
-### Maps
+### Карты
 
-MVP map choice:
+Выбор карты для MVP:
 
-- Mapbox for place picking and trip point display
+- Mapbox для выбора точки и показа точек поездки
 
-Map is used only for pickup and dropoff points.
-No live location tracking in version 1.
+Карта используется только для точек посадки и высадки.
+Live location tracking в первой версии не нужен.
 
-## Infrastructure Plan
+## План инфраструктуры
 
-### Hosting
+### Хостинг
 
-- Vercel for the Next.js application
-- Supabase Postgres or Neon for PostgreSQL
-- Supabase Storage or S3-compatible storage for images
-- Resend for email delivery
-- Telegram Bot API for operational notifications
-- PostHog for product analytics
-- Sentry for error tracking
+- Vercel для приложения Next.js
+- Supabase Postgres или Neon для PostgreSQL
+- Supabase Storage или S3-compatible storage для изображений
+- Resend для email-доставки
+- Telegram Bot API для операционных уведомлений
+- PostHog для продуктовой аналитики
+- Sentry для error tracking
 
-### Deployment Shape
+### Схема деплоя
 
-For MVP there is no separate backend server.
-The deployment consists of:
+Для MVP отдельный backend server не нужен.
+Схема деплоя состоит из:
 
-1. one Next.js app deployment
-2. one managed PostgreSQL database
-3. external services for storage, email, maps, analytics, and notifications
+1. одного деплоя Next.js-приложения
+2. одной managed PostgreSQL базы
+3. внешних сервисов для storage, email, карт, аналитики и уведомлений
 
-## Cost Expectations
+## Ожидания по стоимости
 
-### Cheapest Launch Setup
+### Самый дешевый старт
 
-- domain: around 10-15 USD/year for .com
+- домен: около 10-15 USD в год для .com
 - Vercel Hobby: 0 USD
-- managed Postgres free tier: 0 USD at very early stage
+- managed Postgres free tier: 0 USD на самом раннем этапе
 - Resend free tier: 0 USD
 - Telegram bot: 0 USD
-- Mapbox: usually free at low usage
+- Mapbox: обычно 0 USD при низкой нагрузке
 
-### Practical MVP Budget
+### Практичный бюджет на MVP
 
-Rough monthly budget after the first real users:
+Примерный ежемесячный бюджет после появления первых пользователей:
 
-- Vercel Pro: about 20 USD/month
-- database plan: about 20-25 USD/month
-- email: 0-20 USD/month
-- maps: 0-50 USD/month depending on usage
+- Vercel Pro: около 20 USD в месяц
+- тариф базы: около 20-25 USD в месяц
+- email: 0-20 USD в месяц
+- карты: 0-50 USD в месяц в зависимости от нагрузки
 
-Expected MVP operating cost: about 40-95 USD/month plus domain.
+Ожидаемая стоимость MVP: около 40-95 USD в месяц плюс домен.
 
-## Success Metrics
+## Метрики успеха
 
-Track these metrics from week 1:
+Эти метрики нужно отслеживать с первой недели:
 
-- trips created per day
-- bookings created per day
-- booking confirmation rate
-- completed trips per day
-- repeat users after 7 days
-- driver cancellation rate
-- passenger no-show rate
-- average seats filled per trip
-- average price per seat
+- сколько поездок создается в день
+- сколько броней создается в день
+- коэффициент подтверждения брони
+- сколько поездок реально завершается в день
+- повторные пользователи через 7 дней
+- процент отмен со стороны водителя
+- процент no-show со стороны пассажира
+- среднее число занятых мест в поездке
+- средняя цена за место
 
-## Build Order
+## Порядок разработки
 
-### Phase 1
+### Этап 1
 
-- initialize Next.js project
-- set up Prisma and PostgreSQL
-- set up authentication
-- define schema and migrations
-- implement profile and vehicle setup
+- инициализировать Next.js-проект
+- поднять Prisma и PostgreSQL
+- подключить authentication
+- зафиксировать schema и миграционный поток
+- реализовать профиль пользователя и машину
 
-### Phase 2
+### Этап 2
 
-- create trip flow
-- trip listing and filters
-- trip details page
-- booking flow
-- driver confirmation flow
+- реализовать создание поездки
+- собрать список поездок и фильтры
+- сделать страницу поездки
+- реализовать flow бронирования
+- реализовать подтверждение брони водителем
 
-### Phase 3
+### Этап 3
 
-- my trips and my bookings
-- completion flow
-- reviews
-- notifications
-- admin tools
-- analytics and error tracking
+- сделать страницы моих поездок и моих броней
+- реализовать flow завершения поездки
+- добавить отзывы
+- добавить уведомления
+- добавить инструменты админа
+- подключить аналитику и error tracking
 
-## Working Rules
+## Рабочие правила
 
-- build mobile-first
-- optimize for speed to launch, not architecture complexity
-- keep logic inside the main Next.js app until product demand is proven
-- prefer manual moderation over overengineering in early versions
-- add only features that improve liquidity, trust, or trip completion rate
+- собираем продукт mobile-first
+- оптимизируемся под скорость запуска, а не под архитектурную сложность
+- держим основную логику внутри одного Next.js-приложения, пока спрос не доказан
+- предпочитаем ручную модерацию преждевременной автоматизации
+- добавляем только те функции, которые повышают ликвидность, доверие или завершение поездок
 
-## Definition of MVP Done
+## Определение готовности MVP
 
-The MVP is ready when:
+MVP считается готовым, когда:
 
-- a driver can create a trip in under 2 minutes
-- a passenger can find and book a trip from a phone browser
-- a driver can confirm or reject a booking
-- both users receive notifications
-- completed trips can collect reviews
-- admin can manually intervene when something goes wrong
+- водитель может создать поездку меньше чем за 2 минуты
+- пассажир может найти и забронировать поездку с телефона
+- водитель может подтвердить или отклонить бронь
+- обе стороны получают уведомления
+- после завершения поездки можно собрать отзывы
+- админ может вручную вмешаться, если что-то пошло не так
 
-## Next Implementation Step
+## Следующий шаг реализации
 
-The next technical step after this document is to scaffold the Next.js project and lock the Prisma schema based on the entities above.
+Следующий технический шаг после этого документа - собрать auth, профиль пользователя и onboarding машины на базе уже созданной Prisma schema.

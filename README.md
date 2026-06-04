@@ -1,64 +1,71 @@
 # CarPool
 
-CarPool is a mobile-first ride sharing MVP focused on repeat commuter routes in Bishkek.
+CarPool - mobile-first MVP сервиса совместных поездок для повторяющихся маршрутов по Бишкеку.
 
-The current product scope is locked in [docs/mvp.md](docs/mvp.md).
+Текущее продуктовое описание зафиксировано в [docs/mvp.md](docs/mvp.md).
 
-## MVP scope
+## Что входит в MVP
 
-- drivers create planned trips
-- passengers browse and book available seats
-- drivers confirm or reject bookings
-- users receive notifications by email and Telegram
-- both sides can leave reviews after completed trips
+- водитель создает запланированную поездку
+- пассажир находит поездку и бронирует место
+- водитель подтверждает или отклоняет бронь
+- обе стороны получают уведомления по email и в Telegram
+- после завершения поездки обе стороны могут оставить отзыв
 
-The first release does not include online payments, live tracking, native mobile apps, or advanced route matching.
+Первая версия не включает онлайн-оплату, live tracking, нативные мобильные приложения и сложный matching по геометрии маршрута.
 
-## Stack
+## Язык продукта
 
-- Next.js 16 with App Router and TypeScript
+- весь пользовательский интерфейс должен быть на русском языке
+- статусы, ошибки, email и Telegram-уведомления тоже должны быть на русском
+- код, Prisma-модели, названия сущностей и технические идентификаторы остаются на английском
+- базовый словарь пользовательских текстов лежит в `src/lib/content/ru.ts`
+
+## Стек
+
+- Next.js 16 с App Router и TypeScript
 - Prisma ORM
 - PostgreSQL
 - Tailwind CSS
-- Mapbox for trip points
-- Telegram Bot API and email for notifications
-- Vercel and managed Postgres for deployment
+- Mapbox для точек посадки и высадки
+- Telegram Bot API и email для уведомлений
+- Vercel и managed Postgres для деплоя
 
-## Local setup
+## Локальный запуск
 
-1. Copy `.env.example` to `.env`.
-2. Set a valid `DATABASE_URL`.
-3. Install dependencies with `npm install`.
-4. Generate Prisma client with `npm run prisma:generate`.
-5. Start the app with `npm run dev`.
+1. Скопируй `.env.example` в `.env`.
+2. Укажи корректный `DATABASE_URL`.
+3. Установи зависимости через `npm install`.
+4. Сгенерируй Prisma client командой `npm run prisma:generate`.
+5. Запусти приложение через `npm run dev`.
 
-## Docker setup
+## Docker
 
-Run the full local stack with Docker:
+Поднять весь локальный стек:
 
 ```bash
 npm run docker:up
 ```
 
-If you only need PostgreSQL for Prisma or DBeaver:
+Если нужна только PostgreSQL для Prisma или DBeaver:
 
 ```bash
 npm run docker:db
 ```
 
-This starts:
+После запуска доступны:
 
-- Next.js app at `http://localhost:3000`
-- PostgreSQL at `localhost:5432`
+- приложение Next.js на `http://localhost:3000`
+- PostgreSQL на `localhost:5432`
 
-Useful commands:
+Полезные команды:
 
-- `npm run docker:logs` to follow container logs
-- `npm run docker:down` to stop the stack
+- `npm run docker:logs` для просмотра логов контейнеров
+- `npm run docker:down` для остановки стека
 
-On the first `npm run docker:up`, the `app` container installs npm dependencies inside its Docker volume before starting Next.js, so the first startup can take a bit longer than the next ones.
+При первом `npm run docker:up` контейнер `app` установит npm-зависимости внутри Docker volume, поэтому первый старт может занять больше времени.
 
-The PostgreSQL container uses these default credentials:
+Параметры PostgreSQL для DBeaver:
 
 - host: `localhost`
 - port: `5432`
@@ -66,18 +73,16 @@ The PostgreSQL container uses these default credentials:
 - user: `postgres`
 - password: `postgres`
 
-You can use the same values in DBeaver.
+## Скрипты
 
-## Scripts
+- `npm run dev` запускает development server
+- `npm run lint` запускает ESLint
+- `npm run prisma:generate` пересобирает Prisma client
+- `npm run db:push` применяет текущую Prisma schema к базе
+- `npm run db:studio` открывает Prisma Studio
 
-- `npm run dev` starts the development server.
-- `npm run lint` runs ESLint.
-- `npm run prisma:generate` regenerates the Prisma client.
-- `npm run db:push` pushes the Prisma schema to the database.
-- `npm run db:studio` opens Prisma Studio.
+## Ближайший порядок разработки
 
-## Near-term build order
-
-1. Auth, profile, and vehicle setup
-2. Trip creation, listing, and booking
-3. Notifications, reviews, and admin tools
+1. Auth, профиль пользователя и настройка машины
+2. Создание поездки, список поездок и бронирование
+3. Уведомления, отзывы и инструменты админа
