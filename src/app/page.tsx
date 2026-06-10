@@ -1,7 +1,12 @@
+import Link from "next/link";
+import { getCurrentUser, getPostAuthRedirect } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 
-export default function Home() {
+export default async function Home() {
   const { home } = ruContent;
+  const user = await getCurrentUser();
+  const authHref = user ? getPostAuthRedirect(user) : "/auth/sign-in";
+  const authLabel = user ? home.authCtaUser : home.authCtaGuest;
 
   return (
     <main className="flex-1">
@@ -15,8 +20,16 @@ export default function Home() {
               {home.note}
             </p>
           </div>
-          <div className="rounded-full border border-line bg-surface px-4 py-2 text-sm text-muted shadow-[0_18px_60px_rgba(23,33,43,0.08)]">
-            {home.statusBadge}
+          <div className="flex items-center gap-3">
+            <Link
+              href={authHref}
+              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              {authLabel}
+            </Link>
+            <div className="rounded-full border border-line bg-surface px-4 py-2 text-sm text-muted shadow-[0_18px_60px_rgba(23,33,43,0.08)]">
+              {home.statusBadge}
+            </div>
           </div>
         </header>
 
