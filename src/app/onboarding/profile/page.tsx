@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { isUserProfileComplete } from "@/lib/profile";
 import { ProfileOnboardingForm } from "./profile-form";
 
 export default async function ProfileOnboardingPage() {
@@ -9,10 +8,6 @@ export default async function ProfileOnboardingPage() {
 
   if (!user) {
     redirect("/auth/sign-in?callbackUrl=/onboarding/profile");
-  }
-
-  if (isUserProfileComplete(user)) {
-    redirect("/dashboard");
   }
 
   const onboarding = ruContent.onboarding;

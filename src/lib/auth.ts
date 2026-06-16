@@ -126,6 +126,26 @@ export async function getCurrentUser() {
       phone: true,
       telegramUsername: true,
       status: true,
+      driverProfile: {
+        select: {
+          id: true,
+          bio: true,
+        },
+      },
+      vehicles: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        take: 1,
+        select: {
+          id: true,
+          make: true,
+          model: true,
+          color: true,
+          plateNumber: true,
+          seatsCount: true,
+        },
+      },
       createdAt: true,
     },
   });

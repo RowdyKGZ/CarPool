@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { isUserProfileComplete } from "@/lib/profile";
+import { isDriverSetupComplete, isUserProfileComplete } from "@/lib/profile";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function DashboardPage() {
@@ -17,6 +17,12 @@ export default async function DashboardPage() {
   }
 
   const dashboard = ruContent.dashboard;
+  const driverSetupComplete = isDriverSetupComplete(user);
+  const primaryVehicle = user.vehicles[0] ?? null;
+  const title = driverSetupComplete ? dashboard.readyTitle : dashboard.title;
+  const description = driverSetupComplete
+    ? dashboard.readyDescription
+    : dashboard.description;
 
   return (
     <main className="flex-1">
@@ -26,10 +32,10 @@ export default async function DashboardPage() {
             {dashboard.eyebrow}
           </p>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            {dashboard.title}
+            {title}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-8 text-muted sm:text-lg">
-            {dashboard.description}
+            {description}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -39,11 +45,17 @@ export default async function DashboardPage() {
             >
               {dashboard.editProfile}
             </Link>
+            <Link
+              href="/onboarding/driver"
+              className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+            >
+              {driverSetupComplete ? dashboard.manageDriver : dashboard.setupDriver}
+            </Link>
             <SignOutButton />
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <DashboardCard label={dashboard.cards.name} value={user.name} />
           <DashboardCard label={dashboard.cards.email} value={user.email ?? "-"} />
           <DashboardCard label={dashboard.cards.phone} value={user.phone ?? "-"} />
@@ -54,6 +66,22 @@ export default async function DashboardPage() {
           <DashboardCard
             label={dashboard.cards.status}
             value={dashboard.cards.completed}
+          />
+          <DashboardCard
+            label={dashboard.cards.driverStatus}
+            value={
+              driverSetupComplete
+                ? dashboard.cards.driverCompleted
+                : dashboard.cards.driverPending
+            }
+          />
+          <DashboardCard
+            label={dashboard.cards.vehicle}
+            value={
+              primaryVehicle
+                ? `${primaryVehicle.make} ${primaryVehicle.model}, ${primaryVehicle.plateNumber}`
+                : "-"
+            }
           />
         </section>
       </div>

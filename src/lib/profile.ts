@@ -1,9 +1,36 @@
 import type { User } from "@prisma/client";
 
 type ProfileCompletionSubject = Pick<User, "phone" | "telegramUsername">;
+type DriverSetupSubject = {
+  driverProfile: {
+    id: string;
+  } | null;
+  vehicles: Array<{
+    id: string;
+    make: string;
+    model: string;
+    color: string;
+    plateNumber: string;
+    seatsCount: number;
+  }>;
+};
 
 export function isUserProfileComplete(user: ProfileCompletionSubject) {
   return Boolean(user.phone?.trim()) && Boolean(user.telegramUsername?.trim());
+}
+
+export function isDriverSetupComplete(subject: DriverSetupSubject) {
+  return (
+    Boolean(subject.driverProfile) &&
+    subject.vehicles.some(
+      (vehicle) =>
+        Boolean(vehicle.make.trim()) &&
+        Boolean(vehicle.model.trim()) &&
+        Boolean(vehicle.color.trim()) &&
+        Boolean(vehicle.plateNumber.trim()) &&
+        vehicle.seatsCount > 0,
+    )
+  );
 }
 
 export function normalizePhone(input: string) {
@@ -22,6 +49,10 @@ export function normalizePhone(input: string) {
 
 export function normalizeTelegramUsername(input: string) {
   return input.trim().replace(/^@/, "");
+}
+
+export function normalizeVehiclePlate(input: string) {
+  return input.trim().toUpperCase().replace(/\s+/g, " ");
 }
 
 export function buildDisplayName(email: string) {

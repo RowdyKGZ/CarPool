@@ -3,10 +3,8 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
-import {
-  initialOnboardingProfileState,
-  saveOnboardingProfile,
-} from "./actions";
+import { saveOnboardingProfile } from "./actions";
+import { initialOnboardingProfileState } from "./state";
 
 type ProfileOnboardingFormProps = {
   defaultValues: {

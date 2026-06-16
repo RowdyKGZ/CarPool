@@ -6,7 +6,12 @@ import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { db } from "@/lib/db";
-import { normalizePhone, normalizeTelegramUsername } from "@/lib/profile";
+import {
+  isUserProfileComplete,
+  normalizePhone,
+  normalizeTelegramUsername,
+} from "@/lib/profile";
+import type { OnboardingProfileState } from "./state";
 
 const profileSchema = z.object({
   name: z.string().trim().min(2, "Укажи имя.").max(80, "Имя слишком длинное."),
@@ -26,18 +31,6 @@ const profileSchema = z.object({
     }),
 });
 
-type FieldName = "name" | "phone" | "telegramUsername";
-
-export type OnboardingProfileState = {
-  message: string | null;
-  fieldErrors: Partial<Record<FieldName, string>>;
-};
-
-export const initialOnboardingProfileState: OnboardingProfileState = {
-  message: null,
-  fieldErrors: {},
-};
-
 export async function saveOnboardingProfile(
   _prevState: OnboardingProfileState,
   formData: FormData,
@@ -47,6 +40,20 @@ export async function saveOnboardingProfile(
   if (!session?.user?.id) {
     redirect("/auth/sign-in?callbackUrl=/onboarding/profile");
   }
+
+  const existingUser = await db.user.findUnique({
+    where: {
+      id: session.user.id,
+    },
+    select: {
+      phone: true,
+      telegramUsername: true,
+    },
+  });
+
+  const wasProfileComplete = existingUser
+    ? isUserProfileComplete(existingUser)
+    : false;
 
   const rawValues = {
     name: String(formData.get("name") ?? ""),
@@ -103,5 +110,5 @@ export async function saveOnboardingProfile(
     throw error;
   }
 
-  redirect("/dashboard");
+  redirect(wasProfileComplete ? "/dashboard" : "/onboarding/driver");
 }
