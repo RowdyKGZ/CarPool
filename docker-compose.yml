@@ -23,7 +23,11 @@ services:
     image: node:20-bookworm-slim
     working_dir: /app
     command: >
-      sh -c "if [ ! -d node_modules/next ]; then npm ci; fi &&
+      sh -c "lockfile_hash=$$(sha256sum package-lock.json | awk '{print $1}') &&
+      installed_hash=$$(cat node_modules/.package-lock.hash 2>/dev/null || true) &&
+      if [ ! -d node_modules/next ] || [ ! -d node_modules/next-auth ] ||
+      [ \"$$lockfile_hash\" != \"$$installed_hash\" ]; then npm ci &&
+      printf '%s' \"$$lockfile_hash\" > node_modules/.package-lock.hash; fi &&
       npm run prisma:generate &&
       npm run db:push &&
       npm run dev -- --hostname 0.0.0.0"

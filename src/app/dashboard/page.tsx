@@ -39,9 +39,17 @@ export default async function DashboardPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
+            {driverSetupComplete ? (
+              <Link
+                href="/trips/new"
+                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
+              >
+                {dashboard.createTrip}
+              </Link>
+            ) : null}
             <Link
               href="/onboarding/profile"
-              className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
+              className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
             >
               {dashboard.editProfile}
             </Link>

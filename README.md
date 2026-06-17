@@ -75,6 +75,8 @@ npm run docker:db
 
 При первом `npm run docker:up` контейнер `app` установит npm-зависимости внутри Docker volume, поэтому первый старт может занять больше времени.
 
+Если `package-lock.json` изменился или внутри volume не хватает пакета вроде `next-auth`, dev-контейнер автоматически выполнит `npm ci` повторно и обновит зависимости.
+
 Параметры PostgreSQL для DBeaver:
 
 - host: `localhost`
