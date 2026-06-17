@@ -5,11 +5,8 @@ import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { db } from "@/lib/db";
-import { BISHKEK_DISTRICTS } from "@/lib/districts";
 import { isDriverSetupComplete, isUserProfileComplete } from "@/lib/profile";
 import type { TripNewState } from "./state";
-
-const DISTRICTS_SET = new Set(BISHKEK_DISTRICTS as readonly string[]);
 
 // Hidden map inputs send "" when no pin is placed — treat that as "not provided".
 function emptyToUndefined(value: FormDataEntryValue | null): string | undefined {
@@ -30,14 +27,6 @@ const optionalLongitude = z.coerce
 
 const tripNewSchema = z
   .object({
-    fromDistrict: z
-      .string()
-      .min(1, "Выбери район отправления.")
-      .refine((v) => DISTRICTS_SET.has(v), "Выбери район из списка."),
-    toDistrict: z
-      .string()
-      .min(1, "Выбери район прибытия.")
-      .refine((v) => DISTRICTS_SET.has(v), "Выбери район из списка."),
     pickupLabel: z
       .string()
       .trim()
@@ -68,10 +57,6 @@ const tripNewSchema = z
     pickupLng: optionalLongitude,
     dropoffLat: optionalLatitude,
     dropoffLng: optionalLongitude,
-  })
-  .refine((data) => data.fromDistrict !== data.toDistrict, {
-    message: "Откуда и куда не могут совпадать.",
-    path: ["toDistrict"],
   });
 
 function parseBishkekDatetime(value: string): Date | null {
@@ -129,8 +114,6 @@ export async function createTrip(
   const primaryVehicle = currentUser.vehicles[0]!;
 
   const rawValues = {
-    fromDistrict: String(formData.get("fromDistrict") ?? ""),
-    toDistrict: String(formData.get("toDistrict") ?? ""),
     pickupLabel: String(formData.get("pickupLabel") ?? ""),
     dropoffLabel: String(formData.get("dropoffLabel") ?? ""),
     departureAt: String(formData.get("departureAt") ?? ""),
@@ -152,8 +135,6 @@ export async function createTrip(
     return {
       message: formErrors[0] ?? ruContent.tripNew.genericError,
       fieldErrors: {
-        fromDistrict: fieldErrors.fromDistrict?.[0],
-        toDistrict: fieldErrors.toDistrict?.[0],
         pickupLabel: fieldErrors.pickupLabel?.[0],
         dropoffLabel: fieldErrors.dropoffLabel?.[0],
         departureAt: fieldErrors.departureAt?.[0],
@@ -193,8 +174,6 @@ export async function createTrip(
     data: {
       driverId: session.user.id,
       vehicleId: primaryVehicle.id,
-      fromDistrict: parsed.data.fromDistrict,
-      toDistrict: parsed.data.toDistrict,
       pickupLabel: parsed.data.pickupLabel,
       pickupLat: parsed.data.pickupLat ?? null,
       pickupLng: parsed.data.pickupLng ?? null,

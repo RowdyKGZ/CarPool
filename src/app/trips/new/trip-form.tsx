@@ -3,7 +3,6 @@
 import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
-import { BISHKEK_DISTRICTS } from "@/lib/districts";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
 import { createTrip } from "./actions";
 import { initialTripNewState } from "./state";
@@ -38,66 +37,6 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
 
   return (
     <form action={formAction} className="space-y-5">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="fromDistrict"
-          >
-            {c.fromDistrictLabel}
-          </label>
-          <select
-            id="fromDistrict"
-            name="fromDistrict"
-            defaultValue=""
-            className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
-          >
-            <option value="" disabled>
-              {c.selectPlaceholder}
-            </option>
-            {BISHKEK_DISTRICTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-          {state.fieldErrors.fromDistrict ? (
-            <p className="text-sm text-[rgb(180,58,0)]">
-              {state.fieldErrors.fromDistrict}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="toDistrict"
-          >
-            {c.toDistrictLabel}
-          </label>
-          <select
-            id="toDistrict"
-            name="toDistrict"
-            defaultValue=""
-            className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
-          >
-            <option value="" disabled>
-              {c.selectPlaceholder}
-            </option>
-            {BISHKEK_DISTRICTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-          {state.fieldErrors.toDistrict ? (
-            <p className="text-sm text-[rgb(180,58,0)]">
-              {state.fieldErrors.toDistrict}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">{cm.heading}</p>
         <TripMap
@@ -127,7 +66,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           value={pickupLabel}
           onChange={(e) => setPickupLabel(e.target.value)}
           placeholder={c.pickupPlaceholder}
-          className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
         />
         {state.fieldErrors.pickupLabel ? (
           <p className="text-sm text-[rgb(180,58,0)]">
@@ -150,7 +89,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           value={dropoffLabel}
           onChange={(e) => setDropoffLabel(e.target.value)}
           placeholder={c.dropoffPlaceholder}
-          className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
         />
         {state.fieldErrors.dropoffLabel ? (
           <p className="text-sm text-[rgb(180,58,0)]">
@@ -170,7 +109,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           id="departureAt"
           name="departureAt"
           type="datetime-local"
-          className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
+          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
         />
         {state.fieldErrors.departureAt ? (
           <p className="text-sm text-[rgb(180,58,0)]">
@@ -194,7 +133,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
             min={0}
             max={10000}
             placeholder={c.pricePlaceholder}
-            className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
           />
           {state.fieldErrors.pricePerSeat ? (
             <p className="text-sm text-[rgb(180,58,0)]">
@@ -217,7 +156,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
             min={1}
             max={maxSeats}
             placeholder={String(maxSeats)}
-            className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
           />
           <p className="text-sm leading-6 text-muted">
             {c.seatsHelper} {vehicleName} — до {maxSeats} мест.
@@ -242,7 +181,7 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           name="comment"
           placeholder={c.commentPlaceholder}
           rows={3}
-          className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
         />
         {state.fieldErrors.comment ? (
           <p className="text-sm text-[rgb(180,58,0)]">

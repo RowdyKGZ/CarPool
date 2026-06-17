@@ -120,8 +120,8 @@ model Trip {
   id            String       @id @default(cuid())
   driverId      String
   vehicleId     String
-  fromDistrict  String
-  toDistrict    String
+  fromDistrict  String?
+  toDistrict    String?
   pickupLabel   String
   pickupLat     Float?
   pickupLng     Float?

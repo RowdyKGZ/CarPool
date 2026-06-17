@@ -92,7 +92,7 @@ export default async function TripPage({
                 {c.eyebrow}
               </p>
               <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {trip.fromDistrict} → {trip.toDistrict}
+                {trip.pickupLabel} → {trip.dropoffLabel}
               </h1>
             </div>
             <span
@@ -146,7 +146,7 @@ export default async function TripPage({
 
 function TripCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-3xl border border-line bg-white p-4">
+    <article className="rounded-3xl border border-line bg-surface p-4">
       <p className="text-xs text-muted">{label}</p>
       <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </article>

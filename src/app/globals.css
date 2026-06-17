@@ -30,11 +30,15 @@
   box-sizing: border-box;
 }
 
-body {
+html {
   background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.18), transparent 34%),
+    radial-gradient(ellipse 80% 60% at top left, rgba(249, 115, 22, 0.14), transparent),
+    radial-gradient(ellipse 80% 60% at bottom right, rgba(15, 118, 110, 0.14), transparent),
     var(--background);
+  background-attachment: fixed;
+}
+
+body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }

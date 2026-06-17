@@ -1,6 +1,4 @@
 export type TripNewFieldName =
-  | "fromDistrict"
-  | "toDistrict"
   | "pickupLabel"
   | "dropoffLabel"
   | "departureAt"
