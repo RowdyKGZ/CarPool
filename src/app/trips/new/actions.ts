@@ -11,6 +11,23 @@ import type { TripNewState } from "./state";
 
 const DISTRICTS_SET = new Set(BISHKEK_DISTRICTS as readonly string[]);
 
+// Hidden map inputs send "" when no pin is placed — treat that as "not provided".
+function emptyToUndefined(value: FormDataEntryValue | null): string | undefined {
+  const str = typeof value === "string" ? value.trim() : "";
+  return str.length > 0 ? str : undefined;
+}
+
+const optionalLatitude = z.coerce
+  .number()
+  .min(-90, "Некорректная координата.")
+  .max(90, "Некорректная координата.")
+  .optional();
+const optionalLongitude = z.coerce
+  .number()
+  .min(-180, "Некорректная координата.")
+  .max(180, "Некорректная координата.")
+  .optional();
+
 const tripNewSchema = z
   .object({
     fromDistrict: z
@@ -47,6 +64,10 @@ const tripNewSchema = z
       .trim()
       .max(500, "Комментарий слишком длинный.")
       .transform((v) => v || null),
+    pickupLat: optionalLatitude,
+    pickupLng: optionalLongitude,
+    dropoffLat: optionalLatitude,
+    dropoffLng: optionalLongitude,
   })
   .refine((data) => data.fromDistrict !== data.toDistrict, {
     message: "Откуда и куда не могут совпадать.",
@@ -116,6 +137,10 @@ export async function createTrip(
     pricePerSeat: String(formData.get("pricePerSeat") ?? ""),
     totalSeats: String(formData.get("totalSeats") ?? ""),
     comment: String(formData.get("comment") ?? ""),
+    pickupLat: emptyToUndefined(formData.get("pickupLat")),
+    pickupLng: emptyToUndefined(formData.get("pickupLng")),
+    dropoffLat: emptyToUndefined(formData.get("dropoffLat")),
+    dropoffLng: emptyToUndefined(formData.get("dropoffLng")),
   };
 
   const parsed = tripNewSchema.safeParse(rawValues);
@@ -171,7 +196,11 @@ export async function createTrip(
       fromDistrict: parsed.data.fromDistrict,
       toDistrict: parsed.data.toDistrict,
       pickupLabel: parsed.data.pickupLabel,
+      pickupLat: parsed.data.pickupLat ?? null,
+      pickupLng: parsed.data.pickupLng ?? null,
       dropoffLabel: parsed.data.dropoffLabel,
+      dropoffLat: parsed.data.dropoffLat ?? null,
+      dropoffLng: parsed.data.dropoffLng ?? null,
       departureAt: departureDate,
       pricePerSeat: parsed.data.pricePerSeat,
       totalSeats: parsed.data.totalSeats,

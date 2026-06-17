@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TripStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
 import { db } from "@/lib/db";
+import { TripMap, type LatLng } from "@/components/trip-map";
 
 function formatDeparture(date: Date) {
   return date.toLocaleString("ru-RU", {
@@ -57,6 +58,14 @@ export default async function TripPage({
   }
 
   const c = ruContent.trip;
+  const pickupCoords: LatLng | null =
+    trip.pickupLat != null && trip.pickupLng != null
+      ? { lat: trip.pickupLat, lng: trip.pickupLng }
+      : null;
+  const dropoffCoords: LatLng | null =
+    trip.dropoffLat != null && trip.dropoffLng != null
+      ? { lat: trip.dropoffLat, lng: trip.dropoffLng }
+      : null;
   const statusLabel =
     trip.status === TripStatus.PUBLISHED
       ? c.statusPublished
@@ -118,6 +127,15 @@ export default async function TripPage({
           {trip.comment ? (
             <div className="mt-3">
               <TripCard label={c.comment} value={trip.comment} />
+            </div>
+          ) : null}
+
+          {pickupCoords || dropoffCoords ? (
+            <div className="mt-6 space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                {ruContent.tripMap.routePreview}
+              </p>
+              <TripMap pickup={pickupCoords} dropoff={dropoffCoords} />
             </div>
           ) : null}
         </section>

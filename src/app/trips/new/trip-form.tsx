@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
 import { BISHKEK_DISTRICTS } from "@/lib/districts";
+import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
 import { createTrip } from "./actions";
 import { initialTripNewState } from "./state";
 
@@ -15,6 +16,25 @@ type TripNewFormProps = {
 export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
   const [state, formAction] = useActionState(createTrip, initialTripNewState);
   const c = ruContent.tripNew;
+  const cm = ruContent.tripMap;
+
+  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(null);
+  const [pickupLabel, setPickupLabel] = useState("");
+  const [dropoffLabel, setDropoffLabel] = useState("");
+
+  const handlePick = useCallback(
+    (kind: PinKind, coords: LatLng, address: string | null) => {
+      if (kind === "pickup") {
+        setPickupCoords(coords);
+        if (address) setPickupLabel(address);
+      } else {
+        setDropoffCoords(coords);
+        if (address) setDropoffLabel(address);
+      }
+    },
+    [],
+  );
 
   return (
     <form action={formAction} className="space-y-5">
@@ -79,6 +99,21 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
       </div>
 
       <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">{cm.heading}</p>
+        <TripMap
+          pickup={pickupCoords}
+          dropoff={dropoffCoords}
+          interactive
+          onPick={handlePick}
+        />
+      </div>
+
+      <input type="hidden" name="pickupLat" value={pickupCoords?.lat ?? ""} />
+      <input type="hidden" name="pickupLng" value={pickupCoords?.lng ?? ""} />
+      <input type="hidden" name="dropoffLat" value={dropoffCoords?.lat ?? ""} />
+      <input type="hidden" name="dropoffLng" value={dropoffCoords?.lng ?? ""} />
+
+      <div className="space-y-2">
         <label
           className="text-sm font-medium text-foreground"
           htmlFor="pickupLabel"
@@ -89,6 +124,8 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           id="pickupLabel"
           name="pickupLabel"
           type="text"
+          value={pickupLabel}
+          onChange={(e) => setPickupLabel(e.target.value)}
           placeholder={c.pickupPlaceholder}
           className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
         />
@@ -110,6 +147,8 @@ export function TripNewForm({ maxSeats, vehicleName }: TripNewFormProps) {
           id="dropoffLabel"
           name="dropoffLabel"
           type="text"
+          value={dropoffLabel}
+          onChange={(e) => setDropoffLabel(e.target.value)}
           placeholder={c.dropoffPlaceholder}
           className="w-full rounded-3xl border border-line bg-white px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
         />
