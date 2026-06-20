@@ -4,17 +4,14 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { ruContent } from "@/lib/content/ru";
 
-export function SignOutButton() {
-  const dashboard = ruContent.dashboard;
+export function SignOutButton({ className }: { className?: string }) {
+  const { signOut: label, signOutPending } = ruContent.nav;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSignOut() {
     setIsSubmitting(true);
-
     try {
-      await signOut({
-        callbackUrl: "/",
-      });
+      await signOut({ callbackUrl: "/" });
     } finally {
       setIsSubmitting(false);
     }
@@ -25,9 +22,12 @@ export function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       disabled={isSubmitting}
-      className="rounded-full border border-line bg-white/70 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-surface-strong disabled:cursor-not-allowed disabled:opacity-70"
+      className={
+        className ??
+        "shrink-0 rounded-full border border-line px-3 py-1.5 text-sm font-medium text-muted transition hover:border-accent hover:text-accent disabled:opacity-60"
+      }
     >
-      {isSubmitting ? dashboard.signOutPending : dashboard.signOut}
+      {isSubmitting ? signOutPending : label}
     </button>
   );
 }

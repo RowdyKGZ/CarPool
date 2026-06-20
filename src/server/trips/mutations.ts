@@ -100,6 +100,10 @@ export async function completeTrip(
       where: { tripId, status: BookingStatus.PENDING },
       data: { status: BookingStatus.CANCELLED, cancelledAt: new Date() },
     }),
+    db.driverProfile.updateMany({
+      where: { userId: driverId },
+      data: { tripsCompleted: { increment: 1 } },
+    }),
   ]);
 
   return { ok: true };

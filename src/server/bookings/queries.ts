@@ -1,5 +1,25 @@
+import { BookingStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ACTIVE_BOOKING_STATUSES } from "./schema";
+
+/** Passengers who actually rode a trip (COMPLETED booking) — for driver reviews. */
+export function listCompletedBookingPassengers(tripId: string) {
+  return db.booking.findMany({
+    where: { tripId, status: BookingStatus.COMPLETED },
+    select: { passengerId: true, passenger: { select: { name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/** Whether the passenger has a COMPLETED booking on the trip (rode it). */
+export function passengerHasCompletedBooking(tripId: string, passengerId: string) {
+  return db.booking
+    .findFirst({
+      where: { tripId, passengerId, status: BookingStatus.COMPLETED },
+      select: { id: true },
+    })
+    .then(Boolean);
+}
 
 /** All bookings made by a passenger, newest first (for /my-bookings). */
 export function listPassengerBookings(passengerId: string) {

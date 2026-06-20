@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
-import { SignOutButton } from "./sign-out-button";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -79,7 +78,6 @@ export default async function DashboardPage() {
             >
               {driverSetupComplete ? dashboard.manageDriver : dashboard.setupDriver}
             </Link>
-            <SignOutButton />
           </div>
         </section>
 
