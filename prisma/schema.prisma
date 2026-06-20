@@ -66,8 +66,10 @@ model User {
   id                String         @id @default(cuid())
   name              String
   email             String?        @unique
-  phone             String?        @unique
-  telegramUsername  String?        @unique
+  // TODO(testing): phone/telegramUsername uniqueness temporarily disabled so the
+  // same contact can be reused across test accounts. Re-add `@unique` before prod.
+  phone             String?
+  telegramUsername  String?
   avatarUrl         String?
   role              UserRole       @default(USER)
   isVerified        Boolean        @default(false)
@@ -105,7 +107,8 @@ model Vehicle {
   make        String
   model       String
   color       String
-  plateNumber String   @unique
+  // TODO(testing): plate uniqueness temporarily disabled. Re-add `@unique` before prod.
+  plateNumber String
   seatsCount  Int
   photoUrl    String?
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

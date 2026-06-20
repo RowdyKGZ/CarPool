@@ -12,6 +12,7 @@ import { getTripDetail } from "@/server/trips/queries";
 import { TripMap, type LatLng } from "@/components/trip-map";
 import { BookingForm } from "./booking-form";
 import { DriverBookings, type DriverBooking } from "./driver-bookings";
+import { TripControls } from "./trip-controls";
 
 const TRIP_STATUS_STYLE: Record<TripStatus, string> = {
   PUBLISHED: "bg-[rgba(16,185,129,0.12)] text-[rgb(5,150,105)]",
@@ -136,6 +137,11 @@ export default async function TripPage({
           <div className="mt-8 border-t border-line pt-7">
             {isDriver && sortedDriverBookings ? (
               <>
+                {trip.status === TripStatus.PUBLISHED ? (
+                  <div className="mb-8 border-b border-line pb-7">
+                    <TripControls tripId={trip.id} />
+                  </div>
+                ) : null}
                 <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
                   {ruContent.driverBookings.sectionTitle}
                 </p>

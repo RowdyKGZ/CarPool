@@ -238,6 +238,18 @@ export const ruContent = {
     reject: "Отклонить",
     rejectPending: "Отклоняем...",
   },
+  driverTrip: {
+    sectionTitle: "Управление поездкой",
+    complete: "Завершить поездку",
+    completePending: "Завершаем...",
+    completeConfirm:
+      "Отметить поездку завершённой? Подтверждённые брони станут завершёнными.",
+    cancel: "Отменить поездку",
+    cancelPending: "Отменяем...",
+    cancelConfirm:
+      "Отменить поездку? Все активные брони будут отменены, пассажиры потеряют места.",
+    error: "Не удалось выполнить действие. Попробуй снова.",
+  },
   myBookings: {
     eyebrow: "Мои брони",
     title: "Твои брони",
@@ -248,6 +260,10 @@ export const ruContent = {
     currency: "сом",
     openTrip: "Открыть поездку",
     contactDriver: "Контакт водителя",
+    cancelCta: "Отменить бронь",
+    cancelPending: "Отменяем...",
+    cancelConfirm: "Отменить бронь на эту поездку?",
+    cancelError: "Не удалось отменить бронь. Попробуй снова.",
   },
   myTrips: {
     eyebrow: "Мои поездки",

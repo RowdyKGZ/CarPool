@@ -45,6 +45,20 @@ See [src/app/onboarding/profile/](src/app/onboarding/profile/) and [src/app/onbo
 
 **Hard rule: never export non-function bindings (consts, types) from a `"use server"` file.** Next.js only keeps async-function exports when it builds the client-side action reference for such a module; a plain object/type export silently becomes `undefined` in the client bundle. This exact mistake (initial state constants declared in `actions.ts` instead of `state.ts`) has broken `state.fieldErrors.*` at runtime twice already in this repo — keep state/types in `state.ts`, never in `actions.ts`.
 
+### Domain layer (`src/server/<domain>/`)
+
+Business logic and DB access live in domain modules under `src/server/`, **not** in `app/`. The `app/` layer (pages + actions) is routing/UI only and never touches Prisma directly — `page.tsx` calls queries, `actions.ts` calls mutations. Each domain (`users`, `trips`, `bookings`; add `reviews`/`notifications`/`reports`/`admin` the same way as their UI lands) follows a 3-file split:
+
+- `queries.ts` — read functions returning Prisma data (e.g. `listPublishedTrips`, `getTripDetail`, `listPassengerBookings`). Reusable across pages so the same query isn't re-inlined per route.
+- `mutations.ts` — writes/transactions. Return a **discriminated result** (`{ ok: true, ... } | { ok: false, reason | conflict }`) for domain conflicts instead of throwing string errors; the calling action maps the result to Russian copy from `ruContent`. These are plain modules (no `"use server"`), called from server components/actions only — never import them into client components.
+- `schema.ts` — `zod` schemas + their inferred input types + any `FormData` readers for the domain. Plain module, so it may export consts/types freely (unlike `actions.ts`).
+
+`src/server/users/profile.ts` holds cross-cutting user predicates (`isUserProfileComplete`, `isDriverSetupComplete`) and input normalizers (`normalizePhone`, `normalizeTelegramUsername`, `normalizeVehiclePlate`, `buildDisplayName`) shared between domain schemas and auth.
+
+`src/lib/` is reserved for infrastructure with **no domain** (`db`, `auth`, `content/ru.ts`, `datetime`, `districts`). Shared date/time helpers (`formatDeparture`, `bishkekDayBounds`, `parseBishkekDatetime` — Bishkek is UTC+6, times stored in UTC) live in [src/lib/datetime.ts](src/lib/datetime.ts); don't re-inline them per page.
+
+See [src/server/bookings/](src/server/bookings/) for the reference implementation (schema + queries + result-returning mutations) and [src/app/trips/[id]/booking-actions.ts](src/app/trips/%5Bid%5D/booking-actions.ts) for the matching thin action.
+
 ### Auth & onboarding gating
 
 Auth is intentionally minimalist for this stage (see docs/mvp.md "Аутентификация"): `next-auth` Credentials provider keyed only by email (+ optional name), JWT session strategy, no password/magic-link/OAuth yet — that's the production target, not what's implemented. Everything funnels through [src/lib/auth.ts](src/lib/auth.ts):
@@ -53,17 +67,17 @@ Auth is intentionally minimalist for this stage (see docs/mvp.md "Аутенти
 - `getPostAuthRedirect(user)` — single source of truth for "where does this user land", based on `isUserProfileComplete`.
 - Session/JWT are augmented with `user.id` via the callbacks in `authOptions`; the `id` field is typed on in [src/types/next-auth.d.ts](src/types/next-auth.d.ts).
 
-Profile/driver completeness predicates live in [src/lib/profile.ts](src/lib/profile.ts) (`isUserProfileComplete`, `isDriverSetupComplete`) and are re-checked independently on every page (`/`, `/auth/sign-in`, `/dashboard`, `/onboarding/profile`, `/onboarding/driver`) rather than cached — the funnel is sign-in → `/onboarding/profile` (phone + telegramUsername) → `/onboarding/driver` (bio + vehicle) → `/dashboard`, but a returning user with a complete profile is sent straight to `/dashboard` from any entry point. `lib/profile.ts` also has the input-normalizers (`normalizePhone`, `normalizeTelegramUsername`, `normalizeVehiclePlate`) shared between zod schemas in different `actions.ts` files.
+Profile/driver completeness predicates live in [src/server/users/profile.ts](src/server/users/profile.ts) (`isUserProfileComplete`, `isDriverSetupComplete`) and are re-checked independently on every page (`/`, `/auth/sign-in`, `/dashboard`, `/onboarding/profile`, `/onboarding/driver`) rather than cached — the funnel is sign-in → `/onboarding/profile` (phone + telegramUsername) → `/onboarding/driver` (bio + vehicle) → `/dashboard`, but a returning user with a complete profile is sent straight to `/dashboard` from any entry point. `server/users/profile.ts` also holds the input-normalizers (`normalizePhone`, `normalizeTelegramUsername`, `normalizeVehiclePlate`) used by the domain zod schemas in `src/server/users/schema.ts`.
 
 ### Server action error pattern
 
-Server actions catch `Prisma.PrismaClientKnownRequestError` with code `P2002` (unique constraint) and map `error.meta.target` back to the specific form field (e.g. `phone`, `telegramUsername`, `plateNumber`) so the UI can show a field-level error instead of a generic failure. Follow this pattern for new unique fields (e.g. future `Trip`/`Booking` constraints) rather than letting the constraint error bubble up.
+Unique-constraint handling lives in the **mutation** (`src/server/<domain>/mutations.ts`), not the action: the mutation catches `Prisma.PrismaClientKnownRequestError` with code `P2002` and maps `error.meta.target` to a `conflict` field (e.g. `phone`, `telegramUsername`, `plateNumber`), returning `{ ok: false, conflict }`. The action then maps that conflict to a field-level Russian error from `ruContent` instead of letting the constraint error bubble up (see `conflictField` in [src/server/users/mutations.ts](src/server/users/mutations.ts)). Follow this pattern for new unique fields rather than throwing.
 
 ### Data layer
 
 [src/lib/db.ts](src/lib/db.ts) exports a singleton `PrismaClient` cached on `globalThis` in non-production to survive dev hot-reload. Always import `db` from there; never instantiate `PrismaClient` directly.
 
-[prisma/schema.prisma](prisma/schema.prisma) is the full intended domain model (`User`, `DriverProfile`, `Vehicle`, `Trip`, `Booking`, `Review`, `Notification`, `Report`, `AdminNote`) even though app code currently only touches `User`/`DriverProfile`/`Vehicle` — `Trip`/`Booking`/`Review`/`Notification`/`Report`/`AdminNote` are modeled ahead of the UI that will use them (see docs/mvp.md stage 2/3 roadmap). There's no `prisma/migrations` directory; schema changes are applied with `db:push`, not `migrate`.
+[prisma/schema.prisma](prisma/schema.prisma) is the full intended domain model (`User`, `DriverProfile`, `Vehicle`, `Trip`, `Booking`, `Review`, `Notification`, `Report`, `AdminNote`). App code currently touches `User`/`DriverProfile`/`Vehicle`/`Trip`/`Booking` (via the `src/server/` domain layer); `Review`/`Notification`/`Report`/`AdminNote` are modeled ahead of the UI that will use them (see docs/mvp.md stage 2/3 roadmap). There's no `prisma/migrations` directory; schema changes are applied with `db:push`, not `migrate`.
 
 ### Styling
 

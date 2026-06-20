@@ -18,6 +18,10 @@ export type ModerateBookingResult =
   | { ok: true; tripId: string }
   | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "ALREADY_HANDLED" };
 
+export type CancelBookingResult =
+  | { ok: true; tripId: string }
+  | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "NOT_ACTIVE" };
+
 /**
  * Creates a passenger booking and decrements available seats atomically.
  * Rejects bookings on unavailable trips, own trips, oversold seats, or duplicates.
@@ -97,6 +101,43 @@ export async function confirmBooking(
   });
 
   return { ok: true, tripId: booking.trip.id };
+}
+
+/** Passenger cancels their own active booking and returns its seats to the trip. */
+export async function cancelBooking(
+  passengerId: string,
+  bookingId: string,
+): Promise<CancelBookingResult> {
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      status: true,
+      seatsRequested: true,
+      passengerId: true,
+      tripId: true,
+    },
+  });
+
+  if (!booking) return { ok: false, reason: "NOT_FOUND" };
+  if (booking.passengerId !== passengerId) {
+    return { ok: false, reason: "FORBIDDEN" };
+  }
+  if (!ACTIVE_BOOKING_STATUSES.includes(booking.status)) {
+    return { ok: false, reason: "NOT_ACTIVE" };
+  }
+
+  await db.$transaction([
+    db.booking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.CANCELLED, cancelledAt: new Date() },
+    }),
+    db.trip.update({
+      where: { id: booking.tripId },
+      data: { availableSeats: { increment: booking.seatsRequested } },
+    }),
+  ]);
+
+  return { ok: true, tripId: booking.tripId };
 }
 
 /** Driver rejects a pending booking and returns its seats to the trip. */

@@ -5,6 +5,7 @@ import { ruContent } from "@/lib/content/ru";
 import { getAuthSession } from "@/lib/auth";
 import { formatDeparture } from "@/lib/datetime";
 import { listPassengerBookings } from "@/server/bookings/queries";
+import { CancelBookingButton } from "./cancel-booking-button";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
   PENDING: ruContent.booking.statusPending,
@@ -82,7 +83,7 @@ export default async function MyBookingsPage() {
                 </p>
                 <ul className="space-y-3">
                   {active.map((b) => (
-                    <BookingCard key={b.id} booking={b} />
+                    <BookingCard key={b.id} booking={b} cancellable />
                   ))}
                 </ul>
               </section>
@@ -126,7 +127,13 @@ type BookingWithTrip = {
   };
 };
 
-function BookingCard({ booking }: { booking: BookingWithTrip }) {
+function BookingCard({
+  booking,
+  cancellable = false,
+}: {
+  booking: BookingWithTrip;
+  cancellable?: boolean;
+}) {
   const c = ruContent.myBookings;
   const isConfirmed = booking.status === BookingStatus.CONFIRMED;
 
@@ -164,13 +171,14 @@ function BookingCard({ booking }: { booking: BookingWithTrip }) {
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex items-center justify-between gap-3">
         <Link
           href={`/trips/${booking.trip.id}`}
           className="text-sm font-medium text-accent transition hover:text-accent-strong"
         >
           {c.openTrip} →
         </Link>
+        {cancellable && <CancelBookingButton bookingId={booking.id} />}
       </div>
     </li>
   );
