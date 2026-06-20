@@ -145,6 +145,7 @@ export const ruContent = {
       "Auth и базовый onboarding уже подключены. Теперь можно идти к профилю водителя, машине и созданию поездки.",
     readyDescription:
       "Базовый профиль, профиль водителя и машина уже сохранены. Создай поездку по маршруту — пассажиры смогут её найти и забронировать место.",
+    browseTrips: "Найти поездку",
     createTrip: "Создать поездку",
     editProfile: "Редактировать профиль",
     setupDriver: "Настроить профиль водителя",
@@ -219,6 +220,19 @@ export const ruContent = {
     statusCompleted: "Завершена",
     currency: "сом",
     backToDashboard: "В кабинет",
+  },
+  tripsList: {
+    eyebrow: "Поездки",
+    title: "Доступные поездки",
+    description: "Найди поездку и забронируй место.",
+    filterToday: "Сегодня",
+    filterTomorrow: "Завтра",
+    filterAll: "Все предстоящие",
+    empty: "По выбранному фильтру поездок пока нет.",
+    seats: "Мест свободно",
+    currency: "сом",
+    openTrip: "Открыть",
+    createTripCta: "Создать поездку",
   },
   common: {
     authRequired: "Сначала войди в аккаунт.",
