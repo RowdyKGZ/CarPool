@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { isDriverSetupComplete, isUserProfileComplete } from "@/lib/profile";
+import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
 import { TripNewForm } from "./trip-form";
 
 export default async function TripNewPage() {

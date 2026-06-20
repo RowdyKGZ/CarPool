@@ -1,0 +1,134 @@
+import { BookingStatus, TripStatus } from "@prisma/client";
+import { db } from "@/lib/db";
+import { ACTIVE_BOOKING_STATUSES, type BookingCreateInput } from "./schema";
+
+export type CreateBookingResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason:
+        | "TRIP_UNAVAILABLE"
+        | "OWN_TRIP"
+        | "NOT_ENOUGH_SEATS"
+        | "ALREADY_BOOKED"
+        | "UNKNOWN";
+    };
+
+export type ModerateBookingResult =
+  | { ok: true; tripId: string }
+  | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "ALREADY_HANDLED" };
+
+/**
+ * Creates a passenger booking and decrements available seats atomically.
+ * Rejects bookings on unavailable trips, own trips, oversold seats, or duplicates.
+ */
+export async function createBooking(
+  passengerId: string,
+  input: BookingCreateInput,
+): Promise<CreateBookingResult> {
+  const { tripId, seatsRequested, note } = input;
+  try {
+    await db.$transaction(async (tx) => {
+      const trip = await tx.trip.findUnique({
+        where: { id: tripId },
+        select: { status: true, availableSeats: true, driverId: true },
+      });
+
+      if (!trip || trip.status !== TripStatus.PUBLISHED) {
+        throw new Error("TRIP_UNAVAILABLE");
+      }
+      if (trip.driverId === passengerId) {
+        throw new Error("OWN_TRIP");
+      }
+      if (trip.availableSeats < seatsRequested) {
+        throw new Error("NOT_ENOUGH_SEATS");
+      }
+
+      const existing = await tx.booking.findFirst({
+        where: { tripId, passengerId, status: { in: ACTIVE_BOOKING_STATUSES } },
+      });
+      if (existing) {
+        throw new Error("ALREADY_BOOKED");
+      }
+
+      await tx.booking.create({
+        data: { tripId, passengerId, seatsRequested, note },
+      });
+      await tx.trip.update({
+        where: { id: tripId },
+        data: { availableSeats: { decrement: seatsRequested } },
+      });
+    });
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : "";
+    switch (reason) {
+      case "TRIP_UNAVAILABLE":
+      case "OWN_TRIP":
+      case "NOT_ENOUGH_SEATS":
+      case "ALREADY_BOOKED":
+        return { ok: false, reason };
+      default:
+        return { ok: false, reason: "UNKNOWN" };
+    }
+  }
+
+  return { ok: true };
+}
+
+/** Driver confirms a pending booking. Verifies ownership and pending state. */
+export async function confirmBooking(
+  driverId: string,
+  bookingId: string,
+): Promise<ModerateBookingResult> {
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    select: { status: true, trip: { select: { id: true, driverId: true } } },
+  });
+
+  if (!booking) return { ok: false, reason: "NOT_FOUND" };
+  if (booking.trip.driverId !== driverId) return { ok: false, reason: "FORBIDDEN" };
+  if (booking.status !== BookingStatus.PENDING) {
+    return { ok: false, reason: "ALREADY_HANDLED" };
+  }
+
+  await db.booking.update({
+    where: { id: bookingId },
+    data: { status: BookingStatus.CONFIRMED, confirmedAt: new Date() },
+  });
+
+  return { ok: true, tripId: booking.trip.id };
+}
+
+/** Driver rejects a pending booking and returns its seats to the trip. */
+export async function rejectBooking(
+  driverId: string,
+  bookingId: string,
+): Promise<ModerateBookingResult> {
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      status: true,
+      seatsRequested: true,
+      trip: { select: { id: true, driverId: true } },
+    },
+  });
+
+  if (!booking) return { ok: false, reason: "NOT_FOUND" };
+  if (booking.trip.driverId !== driverId) return { ok: false, reason: "FORBIDDEN" };
+  if (booking.status !== BookingStatus.PENDING) {
+    return { ok: false, reason: "ALREADY_HANDLED" };
+  }
+
+  await db.$transaction([
+    db.booking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.REJECTED },
+    }),
+    db.trip.update({
+      where: { id: booking.trip.id },
+      data: { availableSeats: { increment: booking.seatsRequested } },
+    }),
+  ]);
+
+  return { ok: true, tripId: booking.trip.id };
+}

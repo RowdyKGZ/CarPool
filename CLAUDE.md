@@ -37,7 +37,7 @@ Local setup: copy `.env.example` to `.env`, set `DATABASE_URL`/`NEXTAUTH_URL`/`N
 Each onboarding-style feature under `src/app/**` follows the same 4-file split — follow it for new features (e.g. trip creation, booking):
 
 - `page.tsx` — server component. Loads the current user via `getCurrentUser()`, enforces auth/flow gating with `redirect(...)`, passes plain-data `defaultValues` into the client form.
-- `actions.ts` — `"use server"`. Exports **only** the async server action(s). Validates `FormData` with a local `zod` schema, returns a state object on validation/conflict errors, calls `redirect(...)` on success.
+- `actions.ts` — `"use server"`. Exports **only** the async server action(s). Stays thin: reads `FormData`, validates with the domain `zod` schema from `src/server/<domain>/schema.ts`, delegates persistence/business rules to a `src/server/<domain>/mutations.ts` function, maps the returned result to a state object on validation/conflict errors, calls `redirect(...)` on success. No Prisma access directly in `actions.ts`.
 - `state.ts` — plain module (no directive). Holds the action's state `type` and its `initial*State` constant.
 - `*-form.tsx` — `"use client"`. Calls `useActionState(serverAction, initialState)` from `./state` + `./actions`, renders `state.fieldErrors.<field>`, uses `useFormStatus()` for the submit button's pending state.
 

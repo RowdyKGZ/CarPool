@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { isDriverSetupComplete, isUserProfileComplete } from "@/lib/profile";
+import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function DashboardPage() {
@@ -45,13 +45,27 @@ export default async function DashboardPage() {
             >
               {dashboard.browseTrips}
             </Link>
+            <Link
+              href="/my-bookings"
+              className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+            >
+              {dashboard.myBookings}
+            </Link>
             {driverSetupComplete ? (
-              <Link
-                href="/trips/new"
-                className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
-              >
-                {dashboard.createTrip}
-              </Link>
+              <>
+                <Link
+                  href="/my-trips"
+                  className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+                >
+                  {dashboard.myTrips}
+                </Link>
+                <Link
+                  href="/trips/new"
+                  className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
+                >
+                  {dashboard.createTrip}
+                </Link>
+              </>
             ) : null}
             <Link
               href="/onboarding/profile"

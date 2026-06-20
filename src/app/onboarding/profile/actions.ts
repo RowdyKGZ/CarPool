@@ -1,35 +1,11 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { db } from "@/lib/db";
-import {
-  isUserProfileComplete,
-  normalizePhone,
-  normalizeTelegramUsername,
-} from "@/lib/profile";
+import { saveUserProfile } from "@/server/users/mutations";
+import { profileSchema } from "@/server/users/schema";
 import type { OnboardingProfileState } from "./state";
-
-const profileSchema = z.object({
-  name: z.string().trim().min(2, "Укажи имя.").max(80, "Имя слишком длинное."),
-  phone: z
-    .string()
-    .trim()
-    .transform(normalizePhone)
-    .refine((value) => /^\+\d{9,15}$/.test(value), {
-      message: "Укажи телефон в международном формате, например +996555123456.",
-    }),
-  telegramUsername: z
-    .string()
-    .trim()
-    .transform(normalizeTelegramUsername)
-    .refine((value) => /^[A-Za-z0-9_]{3,32}$/.test(value), {
-      message: "Telegram username должен содержать 3-32 символа: буквы, цифры или _.",
-    }),
-});
 
 export async function saveOnboardingProfile(
   _prevState: OnboardingProfileState,
@@ -41,27 +17,11 @@ export async function saveOnboardingProfile(
     redirect("/auth/sign-in?callbackUrl=/onboarding/profile");
   }
 
-  const existingUser = await db.user.findUnique({
-    where: {
-      id: session.user.id,
-    },
-    select: {
-      phone: true,
-      telegramUsername: true,
-    },
-  });
-
-  const wasProfileComplete = existingUser
-    ? isUserProfileComplete(existingUser)
-    : false;
-
-  const rawValues = {
+  const parsed = profileSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     phone: String(formData.get("phone") ?? ""),
     telegramUsername: String(formData.get("telegramUsername") ?? ""),
-  };
-
-  const parsed = profileSchema.safeParse(rawValues);
+  });
 
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
@@ -76,39 +36,22 @@ export async function saveOnboardingProfile(
     };
   }
 
-  try {
-    await db.user.update({
-      where: {
-        id: session.user.id,
+  const result = await saveUserProfile(session.user.id, parsed.data);
+
+  if (!result.ok) {
+    const isPhone = result.conflict === "phone";
+    return {
+      message: isPhone
+        ? ruContent.onboarding.uniquePhoneError
+        : ruContent.onboarding.uniqueTelegramError,
+      fieldErrors: {
+        phone: isPhone ? ruContent.onboarding.uniquePhoneError : undefined,
+        telegramUsername: isPhone
+          ? undefined
+          : ruContent.onboarding.uniqueTelegramError,
       },
-      data: parsed.data,
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      const target = Array.isArray(error.meta?.target)
-        ? error.meta?.target[0]
-        : undefined;
-
-      return {
-        message:
-          target === "phone"
-            ? ruContent.onboarding.uniquePhoneError
-            : ruContent.onboarding.uniqueTelegramError,
-        fieldErrors: {
-          phone: target === "phone" ? ruContent.onboarding.uniquePhoneError : undefined,
-          telegramUsername:
-            target === "telegramUsername"
-              ? ruContent.onboarding.uniqueTelegramError
-              : undefined,
-        },
-      };
-    }
-
-    throw error;
+    };
   }
 
-  redirect(wasProfileComplete ? "/dashboard" : "/onboarding/driver");
+  redirect(result.wasProfileComplete ? "/dashboard" : "/onboarding/driver");
 }

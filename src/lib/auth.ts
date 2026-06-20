@@ -3,7 +3,7 @@ import { getServerSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { buildDisplayName, isUserProfileComplete } from "@/lib/profile";
+import { buildDisplayName, isUserProfileComplete } from "@/server/users/profile";
 
 const signInSchema = z.object({
   email: z.string().trim().email(),
