@@ -1,5 +1,10 @@
 import { BookingStatus, TripStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import {
+  notifyBookingCancelled,
+  notifyBookingDecision,
+  notifyBookingRequest,
+} from "@/server/notifications/events";
 import { ACTIVE_BOOKING_STATUSES, type BookingCreateInput } from "./schema";
 
 export type CreateBookingResult =
@@ -31,6 +36,7 @@ export async function createBooking(
   input: BookingCreateInput,
 ): Promise<CreateBookingResult> {
   const { tripId, seatsRequested, note } = input;
+  let driverId = "";
   try {
     await db.$transaction(async (tx) => {
       const trip = await tx.trip.findUnique({
@@ -44,6 +50,7 @@ export async function createBooking(
       if (trip.driverId === passengerId) {
         throw new Error("OWN_TRIP");
       }
+      driverId = trip.driverId;
       if (trip.availableSeats < seatsRequested) {
         throw new Error("NOT_ENOUGH_SEATS");
       }
@@ -76,6 +83,7 @@ export async function createBooking(
     }
   }
 
+  await notifyBookingRequest({ tripId, driverId, passengerId, seats: seatsRequested });
   return { ok: true };
 }
 
@@ -86,7 +94,11 @@ export async function confirmBooking(
 ): Promise<ModerateBookingResult> {
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
-    select: { status: true, trip: { select: { id: true, driverId: true } } },
+    select: {
+      status: true,
+      passengerId: true,
+      trip: { select: { id: true, driverId: true } },
+    },
   });
 
   if (!booking) return { ok: false, reason: "NOT_FOUND" };
@@ -98,6 +110,12 @@ export async function confirmBooking(
   await db.booking.update({
     where: { id: bookingId },
     data: { status: BookingStatus.CONFIRMED, confirmedAt: new Date() },
+  });
+
+  await notifyBookingDecision({
+    tripId: booking.trip.id,
+    passengerId: booking.passengerId,
+    confirmed: true,
   });
 
   return { ok: true, tripId: booking.trip.id };
@@ -114,7 +132,7 @@ export async function cancelBooking(
       status: true,
       seatsRequested: true,
       passengerId: true,
-      tripId: true,
+      trip: { select: { id: true, driverId: true } },
     },
   });
 
@@ -132,12 +150,18 @@ export async function cancelBooking(
       data: { status: BookingStatus.CANCELLED, cancelledAt: new Date() },
     }),
     db.trip.update({
-      where: { id: booking.tripId },
+      where: { id: booking.trip.id },
       data: { availableSeats: { increment: booking.seatsRequested } },
     }),
   ]);
 
-  return { ok: true, tripId: booking.tripId };
+  await notifyBookingCancelled({
+    tripId: booking.trip.id,
+    driverId: booking.trip.driverId,
+    passengerId,
+  });
+
+  return { ok: true, tripId: booking.trip.id };
 }
 
 /** Driver rejects a pending booking and returns its seats to the trip. */
@@ -150,6 +174,7 @@ export async function rejectBooking(
     select: {
       status: true,
       seatsRequested: true,
+      passengerId: true,
       trip: { select: { id: true, driverId: true } },
     },
   });
@@ -170,6 +195,12 @@ export async function rejectBooking(
       data: { availableSeats: { increment: booking.seatsRequested } },
     }),
   ]);
+
+  await notifyBookingDecision({
+    tripId: booking.trip.id,
+    passengerId: booking.passengerId,
+    confirmed: false,
+  });
 
   return { ok: true, tripId: booking.trip.id };
 }

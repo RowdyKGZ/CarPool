@@ -9,6 +9,7 @@ export const ruContent = {
     trips: "Поездки",
     myTrips: "Мои поездки",
     myBookings: "Мои брони",
+    notifications: "Уведомления",
     dashboard: "Кабинет",
     signIn: "Войти",
     signOut: "Выйти",
@@ -206,6 +207,34 @@ export const ruContent = {
     notParticipant: "Оставить отзыв можно только участнику завершённой поездки.",
     alreadyReviewed: "Ты уже оставил отзыв этому участнику.",
     error: "Не удалось сохранить отзыв. Попробуй снова.",
+  },
+  notifications: {
+    eyebrow: "Уведомления",
+    title: "Твои уведомления",
+    description: "События по твоим поездкам и броням.",
+    empty: "Уведомлений пока нет.",
+    markRead: "Отметить прочитанными",
+    markReadPending: "Отмечаем...",
+    bookingRequest: (p: { passengerName: string; route: string; seats: number }) => ({
+      title: "Новая заявка на бронь",
+      body: `${p.passengerName} хочет забронировать ${p.seats} мест на поездку ${p.route}.`,
+    }),
+    bookingConfirmed: (p: { route: string }) => ({
+      title: "Бронь подтверждена",
+      body: `Водитель подтвердил твою бронь на поездку ${p.route}. Контакты доступны на странице поездки.`,
+    }),
+    bookingRejected: (p: { route: string }) => ({
+      title: "Бронь отклонена",
+      body: `Водитель отклонил твою бронь на поездку ${p.route}.`,
+    }),
+    bookingCancelled: (p: { passengerName: string; route: string }) => ({
+      title: "Пассажир отменил бронь",
+      body: `${p.passengerName} отменил бронь на поездку ${p.route}. Места снова свободны.`,
+    }),
+    tripCancelled: (p: { route: string }) => ({
+      title: "Поездка отменена",
+      body: `Водитель отменил поездку ${p.route}. Твоя бронь отменена.`,
+    }),
   },
   myBookings: {
     eyebrow: "Мои брони",

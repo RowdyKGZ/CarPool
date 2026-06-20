@@ -9,16 +9,27 @@ const AUTHED_LINKS = [
   { href: "/trips", key: "trips" },
   { href: "/my-trips", key: "myTrips" },
   { href: "/my-bookings", key: "myBookings" },
+  { href: "/notifications", key: "notifications" },
   { href: "/dashboard", key: "dashboard" },
 ] as const;
 
-export function HeaderNav({ authed }: { authed: boolean }) {
+export function HeaderNav({
+  authed,
+  unread = 0,
+}: {
+  authed: boolean;
+  unread?: number;
+}) {
   const [open, setOpen] = useState(false);
   const nav = ruContent.nav;
 
   const links = authed
-    ? AUTHED_LINKS.map((l) => ({ href: l.href, label: nav[l.key] }))
-    : [{ href: "/auth/sign-in", label: nav.signIn }];
+    ? AUTHED_LINKS.map((l) => ({
+        href: l.href,
+        label: nav[l.key],
+        badge: l.href === "/notifications" ? unread : 0,
+      }))
+    : [{ href: "/auth/sign-in", label: nav.signIn, badge: 0 }];
 
   return (
     <>
@@ -28,9 +39,14 @@ export function HeaderNav({ authed }: { authed: boolean }) {
           <Link
             key={l.href}
             href={l.href}
-            className="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:text-accent"
+            className="relative shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:text-accent"
           >
             {l.label}
+            {l.badge > 0 && (
+              <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-white">
+                {l.badge}
+              </span>
+            )}
           </Link>
         ))}
         {authed && <SignOutButton />}
@@ -78,9 +94,14 @@ export function HeaderNav({ authed }: { authed: boolean }) {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="rounded-2xl px-3 py-3 text-base font-medium text-foreground transition hover:bg-surface-strong"
+                className="flex items-center justify-between rounded-2xl px-3 py-3 text-base font-medium text-foreground transition hover:bg-surface-strong"
               >
                 {l.label}
+                {l.badge > 0 && (
+                  <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-white">
+                    {l.badge}
+                  </span>
+                )}
               </Link>
             ))}
             {authed && (

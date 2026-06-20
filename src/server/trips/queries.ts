@@ -44,7 +44,9 @@ export function getTripDetail(id: string) {
         select: {
           name: true,
           telegramUsername: true,
-          driverProfile: { select: { bio: true } },
+          driverProfile: {
+            select: { bio: true, averageRating: true, tripsCompleted: true },
+          },
         },
       },
       vehicle: {

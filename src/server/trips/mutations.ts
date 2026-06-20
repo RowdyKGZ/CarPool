@@ -1,6 +1,7 @@
 import { BookingStatus, TripStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ACTIVE_BOOKING_STATUSES } from "@/server/bookings/schema";
+import { notifyTripCancelled } from "@/server/notifications/events";
 import type { TripCreateInput } from "./schema";
 
 export type TripActionResult =
@@ -62,6 +63,11 @@ export async function cancelTrip(
   const guard = await loadOwnedPublishedTrip(driverId, tripId);
   if (!guard.ok) return guard;
 
+  const affected = await db.booking.findMany({
+    where: { tripId, status: { in: ACTIVE_BOOKING_STATUSES } },
+    select: { passengerId: true },
+  });
+
   await db.$transaction([
     db.trip.update({
       where: { id: tripId },
@@ -72,6 +78,11 @@ export async function cancelTrip(
       data: { status: BookingStatus.CANCELLED, cancelledAt: new Date() },
     }),
   ]);
+
+  await notifyTripCancelled({
+    tripId,
+    passengerIds: affected.map((b) => b.passengerId),
+  });
 
   return { ok: true };
 }

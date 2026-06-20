@@ -6,12 +6,16 @@ import { getAuthSession } from "@/lib/auth";
 import { formatDeparture } from "@/lib/datetime";
 import {
   getActiveBookingForTrip,
+  listCompletedBookingPassengers,
   listTripBookings,
+  passengerHasCompletedBooking,
 } from "@/server/bookings/queries";
 import { getTripDetail } from "@/server/trips/queries";
+import { listAuthoredReviewsForTrip } from "@/server/reviews/queries";
 import { TripMap, type LatLng } from "@/components/trip-map";
 import { BookingForm } from "./booking-form";
 import { DriverBookings, type DriverBooking } from "./driver-bookings";
+import { ReviewsSection } from "./reviews-section";
 import { TripControls } from "./trip-controls";
 
 const TRIP_STATUS_STYLE: Record<TripStatus, string> = {
@@ -41,6 +45,20 @@ export default async function TripPage({
     !isDriver && currentUserId
       ? getActiveBookingForTrip(id, currentUserId)
       : Promise.resolve(null),
+  ]);
+
+  // Reviews are only relevant on a completed trip, for its participants.
+  const isCompleted = trip.status === TripStatus.COMPLETED;
+  const [reviewed, completedPassengers, iRode] = await Promise.all([
+    isCompleted && currentUserId
+      ? listAuthoredReviewsForTrip(id, currentUserId)
+      : Promise.resolve([]),
+    isCompleted && isDriver
+      ? listCompletedBookingPassengers(id)
+      : Promise.resolve([]),
+    isCompleted && currentUserId && !isDriver
+      ? passengerHasCompletedBooking(id, currentUserId)
+      : Promise.resolve(false),
   ]);
 
   const c = ruContent.trip;
@@ -112,7 +130,15 @@ export default async function TripPage({
               label={c.seats}
               value={`${trip.availableSeats} / ${trip.totalSeats}`}
             />
-            <TripCard label={c.driver} value={trip.driver.name} />
+            <TripCard
+              label={c.driver}
+              value={
+                trip.driver.driverProfile &&
+                trip.driver.driverProfile.averageRating > 0
+                  ? `${trip.driver.name} · ★ ${trip.driver.driverProfile.averageRating.toFixed(1)}`
+                  : trip.driver.name
+              }
+            />
             <TripCard
               label={c.vehicle}
               value={`${trip.vehicle.make} ${trip.vehicle.model} · ${trip.vehicle.color} · ${trip.vehicle.plateNumber}`}
@@ -163,6 +189,19 @@ export default async function TripPage({
               </>
             )}
           </div>
+
+          {isCompleted && currentUserId ? (
+            <div className="mt-8 border-t border-line pt-7">
+              <ReviewsSection
+                tripId={trip.id}
+                isDriver={isDriver}
+                driver={{ id: trip.driverId, name: trip.driver.name }}
+                iRode={iRode}
+                completedPassengers={completedPassengers}
+                reviewed={reviewed}
+              />
+            </div>
+          ) : null}
         </section>
       </div>
     </main>
