@@ -141,6 +141,8 @@ model Trip {
   availableSeats Int
   comment       String?
   status        TripStatus   @default(PUBLISHED)
+  // Set when the pre-departure reminder has been sent, to avoid duplicates.
+  reminderSentAt DateTime?
   driver        User         @relation("TripsDriven", fields: [driverId], references: [id], onDelete: Cascade)
   vehicle       Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   bookings      Booking[]

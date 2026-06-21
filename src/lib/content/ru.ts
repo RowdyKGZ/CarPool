@@ -280,6 +280,10 @@ export const ruContent = {
       title: "Поездка отменена",
       body: `Водитель отменил поездку ${p.route}. Твоя бронь отменена.`,
     }),
+    tripReminder: (p: { route: string; time: string }) => ({
+      title: "Скоро выезд",
+      body: `Напоминание: поездка ${p.route} — выезд ${p.time}.`,
+    }),
   },
   myBookings: {
     eyebrow: "Мои брони",

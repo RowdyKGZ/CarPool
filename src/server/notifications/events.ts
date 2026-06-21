@@ -1,6 +1,7 @@
-import { NotificationType } from "@prisma/client";
+import { BookingStatus, NotificationType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ruContent } from "@/lib/content/ru";
+import { formatDeparture } from "@/lib/datetime";
 import { createNotification } from "./mutations";
 
 const n = ruContent.notifications;
@@ -92,6 +93,50 @@ export async function notifyBookingCancelled(params: {
     });
   } catch {
     // never break the cancel flow
+  }
+}
+
+/** Pre-departure reminder → notify the driver and confirmed passengers. */
+export async function notifyTripReminder(params: {
+  tripId: string;
+}): Promise<void> {
+  try {
+    const trip = await db.trip.findUnique({
+      where: { id: params.tripId },
+      select: {
+        driverId: true,
+        pickupLabel: true,
+        dropoffLabel: true,
+        departureAt: true,
+      },
+    });
+    if (!trip) return;
+
+    const confirmed = await db.booking.findMany({
+      where: { tripId: params.tripId, status: BookingStatus.CONFIRMED },
+      select: { passengerId: true },
+    });
+
+    const route = `${trip.pickupLabel} → ${trip.dropoffLabel}`;
+    const m = n.tripReminder({ route, time: formatDeparture(trip.departureAt) });
+    const recipients = [
+      trip.driverId,
+      ...confirmed.map((b) => b.passengerId),
+    ];
+
+    await Promise.all(
+      recipients.map((userId) =>
+        createNotification({
+          userId,
+          type: NotificationType.TRIP_REMINDER,
+          title: m.title,
+          body: m.body,
+          metadata: { tripId: params.tripId },
+        }),
+      ),
+    );
+  } catch {
+    // never break the cron run
   }
 }
 

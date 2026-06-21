@@ -38,8 +38,8 @@ export function HeaderNav({
 
   return (
     <>
-      {/* Tablet / laptop / desktop: inline links */}
-      <nav className="hidden items-center gap-1 md:flex">
+      {/* Tablet / laptop / desktop: inline links (scrolls if many) */}
+      <nav className="hidden min-w-0 items-center gap-1 overflow-x-auto sm:flex">
         {links.map((l) => (
           <Link
             key={l.href}
@@ -63,7 +63,7 @@ export function HeaderNav({
         aria-label={nav.menu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-foreground transition hover:border-accent hover:text-accent md:hidden"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-foreground transition hover:border-accent hover:text-accent sm:hidden"
       >
         <svg
           width="20"
@@ -92,7 +92,7 @@ export function HeaderNav({
 
       {/* Mobile: dropdown panel */}
       {open && (
-        <div className="absolute inset-x-0 top-full border-b border-line bg-surface shadow-[0_24px_60px_rgba(23,33,43,0.12)] md:hidden">
+        <div className="absolute inset-x-0 top-full border-b border-line bg-surface shadow-[0_24px_60px_rgba(23,33,43,0.12)] sm:hidden">
           <nav className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-6 py-3">
             {links.map((l) => (
               <Link
