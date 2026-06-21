@@ -34,6 +34,43 @@ export async function deliverEmail(
   }
 }
 
-// NOTE: Telegram delivery needs a stored chat_id (the user must /start the bot
-// first). Until that onboarding exists we record notifications via email/in-app
-// only; wire deliverTelegram here once chat_id capture is added.
+/**
+ * Sends a Telegram message via the bot if TELEGRAM_BOT_TOKEN is set and the user
+ * has linked their chat (chatId captured when they /start the bot). Otherwise skips.
+ */
+export async function deliverTelegram(
+  chatId: string | null,
+  text: string,
+): Promise<DeliveryResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || !chatId) return "skipped";
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    return res.ok ? "sent" : "failed";
+  } catch {
+    return "failed";
+  }
+}
+
+/** Low-level Telegram send by chatId, used by the webhook to reply on linking. */
+export async function sendTelegramMessage(
+  chatId: number | string,
+  text: string,
+): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+  } catch {
+    // best-effort reply
+  }
+}

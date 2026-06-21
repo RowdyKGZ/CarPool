@@ -93,6 +93,31 @@ npm run docker:db
 - `npm run db:push` применяет текущую Prisma schema к базе
 - `npm run db:studio` открывает Prisma Studio
 
+## Telegram-уведомления
+
+Уведомления пишутся в БД всегда и видны во вкладке «Уведомления». Внешняя доставка
+включается, когда заданы переменные окружения; без них всё работает как in-app лента.
+
+Доставка выбирается на пользователя: если он привязал Telegram — шлём в Telegram,
+иначе fallback на email (Resend). Бот может писать только тем, кто сам нажал Start,
+поэтому привязка идёт через одноразовый токен.
+
+Настройка бота:
+
+1. Создай бота у [@BotFather](https://t.me/BotFather), получи token и username.
+2. Заполни `.env`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
+3. Подними публичный URL (прод-домен или `ngrok http 3000` локально).
+4. Зарегистрируй вебхук (одноразово):
+
+   ```bash
+   curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+     -d "url=https://<твой-домен>/api/telegram/webhook" \
+     -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
+   ```
+
+5. В приложении: «Кабинет» → «Подключить Telegram» → откроется бот → Start. После
+   этого `chat_id` сохранится и уведомления пойдут в Telegram.
+
 ## Ближайший порядок разработки
 
 1. Профиль водителя и машина

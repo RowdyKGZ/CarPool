@@ -5,7 +5,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { db } from "@/lib/db";
-import { deliverEmail } from "@/lib/notify";
+import { deliverEmail, deliverTelegram } from "@/lib/notify";
 
 /**
  * Persists a notification and attempts best-effort email delivery.
@@ -21,13 +21,19 @@ export async function createNotification(input: {
   try {
     const user = await db.user.findUnique({
       where: { id: input.userId },
-      select: { email: true },
+      select: { email: true, telegramChatId: true },
     });
+
+    // Prefer Telegram when the user has linked the bot; otherwise email.
+    const useTelegram = Boolean(user?.telegramChatId);
+    const channel = useTelegram
+      ? NotificationChannel.TELEGRAM
+      : NotificationChannel.EMAIL;
 
     const notification = await db.notification.create({
       data: {
         userId: input.userId,
-        channel: NotificationChannel.EMAIL,
+        channel,
         type: input.type,
         title: input.title,
         body: input.body,
@@ -35,7 +41,11 @@ export async function createNotification(input: {
       },
     });
 
-    const result = await deliverEmail(user?.email ?? null, input.title, input.body);
+    const message = `${input.title}\n\n${input.body}`;
+    const result = useTelegram
+      ? await deliverTelegram(user?.telegramChatId ?? null, message)
+      : await deliverEmail(user?.email ?? null, input.title, input.body);
+
     if (result !== "skipped") {
       await db.notification.update({
         where: { id: notification.id },

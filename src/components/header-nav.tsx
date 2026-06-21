@@ -16,19 +16,24 @@ const AUTHED_LINKS = [
 export function HeaderNav({
   authed,
   unread = 0,
+  isAdmin = false,
 }: {
   authed: boolean;
   unread?: number;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const nav = ruContent.nav;
 
   const links = authed
-    ? AUTHED_LINKS.map((l) => ({
-        href: l.href,
-        label: nav[l.key],
-        badge: l.href === "/notifications" ? unread : 0,
-      }))
+    ? [
+        ...AUTHED_LINKS.map((l) => ({
+          href: l.href,
+          label: nav[l.key],
+          badge: l.href === "/notifications" ? unread : 0,
+        })),
+        ...(isAdmin ? [{ href: "/admin", label: nav.admin, badge: 0 }] : []),
+      ]
     : [{ href: "/auth/sign-in", label: nav.signIn, badge: 0 }];
 
   return (

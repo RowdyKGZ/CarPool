@@ -125,6 +125,8 @@ export async function getCurrentUser() {
       email: true,
       phone: true,
       telegramUsername: true,
+      telegramChatId: true,
+      role: true,
       status: true,
       driverProfile: {
         select: {

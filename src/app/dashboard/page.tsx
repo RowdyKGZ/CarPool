@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
+import { connectTelegramAction } from "./actions";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -18,6 +19,8 @@ export default async function DashboardPage() {
   const dashboard = ruContent.dashboard;
   const driverSetupComplete = isDriverSetupComplete(user);
   const primaryVehicle = user.vehicles[0] ?? null;
+  const telegramLinked = Boolean(user.telegramChatId);
+  const telegramConfigured = Boolean(process.env.TELEGRAM_BOT_USERNAME);
   const title = driverSetupComplete ? dashboard.readyTitle : dashboard.title;
   const description = driverSetupComplete
     ? dashboard.readyDescription
@@ -78,6 +81,18 @@ export default async function DashboardPage() {
             >
               {driverSetupComplete ? dashboard.manageDriver : dashboard.setupDriver}
             </Link>
+            {telegramConfigured && (
+              <form action={connectTelegramAction}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
+                >
+                  {telegramLinked
+                    ? dashboard.reconnectTelegram
+                    : dashboard.connectTelegram}
+                </button>
+              </form>
+            )}
           </div>
         </section>
 
@@ -107,6 +122,14 @@ export default async function DashboardPage() {
               primaryVehicle
                 ? `${primaryVehicle.make} ${primaryVehicle.model}, ${primaryVehicle.plateNumber}`
                 : "-"
+            }
+          />
+          <DashboardCard
+            label={dashboard.cards.telegramNotifications}
+            value={
+              telegramLinked
+                ? dashboard.cards.telegramConnected
+                : dashboard.cards.telegramDisconnected
             }
           />
         </section>

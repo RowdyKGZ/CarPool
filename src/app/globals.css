@@ -31,16 +31,28 @@
 }
 
 html {
-  background:
-    radial-gradient(ellipse 80% 60% at top left, rgba(249, 115, 22, 0.14), transparent),
-    radial-gradient(ellipse 80% 60% at bottom right, rgba(15, 118, 110, 0.14), transparent),
-    var(--background);
-  background-attachment: fixed;
+  background-color: var(--background);
+  /* Stop the rubber-band overscroll that revealed a seam under the fixed glow. */
+  overscroll-behavior: none;
 }
 
 body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Decorative glow as a fixed layer behind content. Keeping the base color solid
+   on <html> means overscroll/rubber-band reveals a uniform background — no seam. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at top left, rgba(249, 115, 22, 0.14), transparent),
+    radial-gradient(ellipse 80% 60% at bottom right, rgba(15, 118, 110, 0.14), transparent);
 }
 
 a {

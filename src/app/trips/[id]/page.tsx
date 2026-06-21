@@ -15,6 +15,7 @@ import { listAuthoredReviewsForTrip } from "@/server/reviews/queries";
 import { TripMap, type LatLng } from "@/components/trip-map";
 import { BookingForm } from "./booking-form";
 import { DriverBookings, type DriverBooking } from "./driver-bookings";
+import { ReportForm } from "./report-form";
 import { ReviewsSection } from "./reviews-section";
 import { TripControls } from "./trip-controls";
 
@@ -200,6 +201,12 @@ export default async function TripPage({
                 completedPassengers={completedPassengers}
                 reviewed={reviewed}
               />
+            </div>
+          ) : null}
+
+          {currentUserId && !isDriver ? (
+            <div className="mt-8 border-t border-line pt-7">
+              <ReportForm tripId={trip.id} />
             </div>
           ) : null}
         </section>
