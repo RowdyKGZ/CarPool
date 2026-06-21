@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentUser, getPostAuthRedirect } from "@/lib/auth";
+import {
+  devLoginEnabled,
+  getCurrentUser,
+  getPostAuthRedirect,
+  googleConfigured,
+} from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
+import { GoogleButton } from "./google-button";
 import { SignInForm } from "./sign-in-form";
 
 export default async function SignInPage() {
@@ -33,8 +39,21 @@ export default async function SignInPage() {
             {signIn.description}
           </p>
 
-          <div className="mt-8 max-w-xl rounded-4xl border border-line bg-white/80 p-6 sm:p-8">
-            <SignInForm />
+          <div className="mt-8 max-w-xl space-y-5 rounded-4xl border border-line bg-white/80 p-6 sm:p-8">
+            {googleConfigured && <GoogleButton />}
+
+            {!googleConfigured && !devLoginEnabled && (
+              <p className="text-sm text-muted">{signIn.noProviders}</p>
+            )}
+
+            {devLoginEnabled && (
+              <div className={googleConfigured ? "border-t border-line pt-5" : ""}>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+                  {signIn.devLoginTitle}
+                </p>
+                <SignInForm />
+              </div>
+            )}
           </div>
         </section>
       </div>

@@ -23,12 +23,19 @@ CarPool - mobile-first MVP сервиса совместных поездок д
 - код, Prisma-модели, названия сущностей и технические идентификаторы остаются на английском
 - базовый словарь пользовательских текстов лежит в `src/lib/content/ru.ts`
 
-## Текущий auth-срез
+## Auth
 
-- сейчас подключен базовый auth через `next-auth` с JWT-сессией
-- вход для текущего этапа упрощен: пользователь входит по email и при желании сразу указывает имя
-- после первого входа пользователь попадает в onboarding профиля
-- production-цель для MVP все еще остается прежней: email magic link или другой верифицируемый вход
+- `next-auth` с JWT-сессией; в `jwt`-колбэке пользователь находится/создаётся в нашей таблице `User` по email, так что и Google, и dev-вход мапятся на одну запись
+- **Google sign-in** — основной (продакшн) способ. Появляется на странице входа, когда заданы `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
+- **Email-вход** (по email + имя) остаётся как **dev-фолбэк** и доступен только при `NODE_ENV !== production` — удобно тестировать без OAuth
+- заблокированные/ограниченные пользователи (`UserStatus`) не пускаются в `signIn`-колбэке
+- после первого входа — onboarding профиля
+
+### Настройка Google OAuth
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → Create OAuth client ID → тип **Web application**.
+2. Authorized redirect URI: `<NEXTAUTH_URL>/api/auth/callback/google` (локально — `http://localhost:3000/api/auth/callback/google`).
+3. Скопируй Client ID/Secret в `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), перезапусти dev-сервер.
 
 ## Стек
 
@@ -118,8 +125,30 @@ npm run docker:db
 5. В приложении: «Кабинет» → «Подключить Telegram» → откроется бот → Start. После
    этого `chat_id` сохранится и уведомления пойдут в Telegram.
 
-## Ближайший порядок разработки
+## Статус реализации
 
-1. Профиль водителя и машина
-2. Создание поездки, список поездок и бронирование
-3. Уведомления, отзывы и инструменты админа
+Сделано:
+
+- [x] Auth (next-auth, JWT): **Google sign-in** + dev-фолбэк по email, блок неактивных
+- [x] Google OAuth настроен локально (`.env` + redirect URI)
+- [x] Профиль пользователя и onboarding
+- [x] Профиль водителя и машина
+- [x] Создание поездки (с картой), список и фильтры, страница поездки
+- [x] Бронирование, подтверждение/отклонение водителем
+- [x] Отмена брони, отмена поездки, завершение поездки
+- [x] «Мои поездки» и «Мои брони»
+- [x] Отзывы и рейтинг водителя
+- [x] Уведомления: in-app лента + бейдж, email (Resend), Telegram-бот
+- [x] Напоминания о выезде (Vercel Cron)
+- [x] Базовая админка (пользователи, поездки, жалобы) + жалобы от пользователей
+- [x] Уникальность контактов (`@unique`) восстановлена, дубли почищены
+- [x] Observability: Sentry (ошибки) + PostHog (аналитика) — включаются по env, no-op без ключей
+
+Осталось:
+
+- [ ] Деплой на Vercel: прод-БД, env-переменные, прод-redirect для Google, cron-расписание (Pro для частого запуска)
+
+### Observability
+
+- **PostHog** — `NEXT_PUBLIC_POSTHOG_KEY` (+ опц. `NEXT_PUBLIC_POSTHOG_HOST`). Инициализируется на клиенте, шлёт `$pageview` при смене роута; без ключа выключен.
+- **Sentry** — `SENTRY_DSN` (сервер) + `NEXT_PUBLIC_SENTRY_DSN` (клиент). Подключён в runtime-режиме без `withSentryConfig`, ловит ошибки только при `NODE_ENV=production`. Для загрузки source maps позже можно добавить `SENTRY_AUTH_TOKEN` и обёртку конфига.

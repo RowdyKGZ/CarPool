@@ -66,10 +66,8 @@ model User {
   id                String         @id @default(cuid())
   name              String
   email             String?        @unique
-  // TODO(testing): phone/telegramUsername uniqueness temporarily disabled so the
-  // same contact can be reused across test accounts. Re-add `@unique` before prod.
-  phone             String?
-  telegramUsername  String?
+  phone             String?        @unique
+  telegramUsername  String?        @unique
   // Telegram bot delivery: chatId captured when the user /starts the bot via a
   // one-time linkToken. chatId stays nullable until the user connects.
   telegramChatId    String?
@@ -111,8 +109,7 @@ model Vehicle {
   make        String
   model       String
   color       String
-  // TODO(testing): plate uniqueness temporarily disabled. Re-add `@unique` before prod.
-  plateNumber String
+  plateNumber String   @unique
   seatsCount  Int
   photoUrl    String?
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

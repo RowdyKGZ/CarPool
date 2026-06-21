@@ -31,17 +31,16 @@
 }
 
 html {
-  /* Gradient lives on the root background (not fixed): the browser extends the
-     edge color into the overscroll/rubber-band region, so there is no seam. */
-  background:
-    radial-gradient(ellipse 80% 60% at top left, rgba(249, 115, 22, 0.14), transparent),
-    radial-gradient(ellipse 80% 60% at bottom right, rgba(15, 118, 110, 0.14), transparent),
-    var(--background);
-  background-attachment: scroll;
+  /* Flat background: an edge-reaching gradient always seams in the overscroll
+     region (which the browser fills with the solid color), so keep it uniform. */
+  background-color: var(--background);
   overscroll-behavior: none;
+  /* Pin the canvas/overscroll tone so the browser doesn't tint it. */
+  color-scheme: light;
 }
 
 body {
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }

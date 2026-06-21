@@ -32,6 +32,9 @@ export const ruContent = {
       pending: "Входим...",
       error: "Не удалось выполнить вход. Проверь email и попробуй еще раз.",
       homeLink: "На главную",
+      googleCta: "Войти через Google",
+      devLoginTitle: "Тестовый вход (dev)",
+      noProviders: "Вход временно недоступен: не настроен ни один способ.",
     },
   },
   onboarding: {
