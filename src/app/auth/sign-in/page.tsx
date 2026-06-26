@@ -5,10 +5,12 @@ import {
   getCurrentUser,
   getPostAuthRedirect,
   googleConfigured,
+  telegramConfigured,
 } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { GoogleButton } from "./google-button";
 import { SignInForm } from "./sign-in-form";
+import { TelegramLogin } from "./telegram-login";
 
 export default async function SignInPage() {
   const user = await getCurrentUser();
@@ -42,7 +44,13 @@ export default async function SignInPage() {
           <div className="mt-8 max-w-xl space-y-5 rounded-4xl border border-line bg-white/80 p-6 sm:p-8">
             {googleConfigured && <GoogleButton />}
 
-            {!googleConfigured && !devLoginEnabled && (
+            {telegramConfigured && (
+              <div className={googleConfigured ? "border-t border-line pt-5" : ""}>
+                <TelegramLogin />
+              </div>
+            )}
+
+            {!googleConfigured && !telegramConfigured && !devLoginEnabled && (
               <p className="text-sm text-muted">{signIn.noProviders}</p>
             )}
 

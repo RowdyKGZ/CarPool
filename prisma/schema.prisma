@@ -68,6 +68,9 @@ model User {
   email             String?        @unique
   phone             String?        @unique
   telegramUsername  String?        @unique
+  // Stable numeric Telegram account id, captured during Telegram OTP sign-in.
+  // This is the identity key for Telegram-registered users (who may have no email).
+  telegramUserId    String?        @unique
   // Telegram bot delivery: chatId captured when the user /starts the bot via a
   // one-time linkToken. chatId stays nullable until the user connects.
   telegramChatId    String?
@@ -244,4 +247,23 @@ model AdminNote {
   @@index([userId])
   @@index([tripId])
   @@index([reportId])
+}
+
+// Short-lived challenge backing the Telegram OTP sign-in flow. The site creates a
+// row (nonce only); the bot webhook fills in the Telegram identity + code when the
+// user opens the deep link; the verify step consumes it. Stale rows expire.
+model TelegramAuthChallenge {
+  id             String    @id @default(cuid())
+  nonce          String    @unique
+  code           String?
+  telegramUserId String?
+  telegramChatId String?
+  username       String?
+  firstName      String?
+  attempts       Int       @default(0)
+  consumedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  @@index([expiresAt])
 }

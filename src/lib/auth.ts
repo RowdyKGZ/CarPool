@@ -4,7 +4,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { verifyTelegramOtp } from "@/server/telegram/otp";
 import { buildDisplayName, isUserProfileComplete } from "@/server/users/profile";
+
+const TELEGRAM_PROVIDER_ID = "telegram-otp";
 
 const signInSchema = z.object({
   email: z.string().trim().email(),
@@ -18,6 +21,11 @@ export const googleConfigured = Boolean(
 
 /** Dev-only email login kept for local testing; disabled in production. */
 export const devLoginEnabled = process.env.NODE_ENV !== "production";
+
+/** Telegram OTP sign-in, available once the bot token + username are configured. */
+export const telegramConfigured = Boolean(
+  process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME,
+);
 
 const credentialsProvider = CredentialsProvider({
   name: "credentials",
@@ -68,6 +76,32 @@ const credentialsProvider = CredentialsProvider({
   },
 });
 
+// Telegram OTP: identity is verified end-to-end in verifyTelegramOtp (challenge +
+// code), so authorize just maps a valid challenge to our DB user. The returned id
+// is already our User.id, which the jwt callback trusts directly (no email needed).
+const telegramProvider = CredentialsProvider({
+  id: TELEGRAM_PROVIDER_ID,
+  name: "Telegram",
+  credentials: {
+    nonce: { label: "Nonce", type: "text" },
+    code: { label: "Code", type: "text" },
+  },
+  async authorize(credentials) {
+    const nonce = credentials?.nonce?.trim();
+    const code = credentials?.code?.trim();
+    if (!nonce || !code) return null;
+
+    const result = await verifyTelegramOtp(nonce, code);
+    if (!result.ok) return null;
+
+    return {
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+    };
+  },
+});
+
 const providers: NextAuthOptions["providers"] = [];
 if (googleConfigured) {
   providers.push(
@@ -76,6 +110,9 @@ if (googleConfigured) {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   );
+}
+if (telegramConfigured) {
+  providers.push(telegramProvider);
 }
 if (devLoginEnabled) {
   providers.push(credentialsProvider);
@@ -91,8 +128,10 @@ export const authOptions: NextAuthOptions = {
   },
   providers,
   callbacks: {
-    // Block blocked/suspended users at the door (both providers).
-    async signIn({ user }) {
+    // Block blocked/suspended users at the door. Telegram OTP already resolves +
+    // status-checks the user inside verifyTelegramOtp, so it's allowed through.
+    async signIn({ user, account }) {
+      if (account?.provider === TELEGRAM_PROVIDER_ID) return true;
       const email = user.email?.toLowerCase();
       if (!email) return false;
       const existing = await db.user.findUnique({
@@ -101,21 +140,26 @@ export const authOptions: NextAuthOptions = {
       });
       return !existing || existing.status === UserStatus.ACTIVE;
     },
-    // Resolve our DB user id (find-or-create by email) so OAuth and credentials
-    // both map onto the same User row. Runs only on initial sign-in.
-    async jwt({ token, user }) {
-      if (user?.email) {
-        const email = user.email.toLowerCase();
-        const dbUser = await db.user.upsert({
-          where: { email },
-          update: {},
-          create: {
-            email,
-            name: user.name?.trim() || buildDisplayName(email),
-            avatarUrl: user.image ?? null,
-          },
-        });
-        token.userId = dbUser.id;
+    // Resolve our DB user id so every provider maps onto the same User row. Runs
+    // only on initial sign-in. Telegram OTP already returns our User.id (no email),
+    // so we trust it directly; email providers find-or-create by email.
+    async jwt({ token, user, account }) {
+      if (user) {
+        if (account?.provider === TELEGRAM_PROVIDER_ID) {
+          token.userId = user.id;
+        } else if (user.email) {
+          const email = user.email.toLowerCase();
+          const dbUser = await db.user.upsert({
+            where: { email },
+            update: {},
+            create: {
+              email,
+              name: user.name?.trim() || buildDisplayName(email),
+              avatarUrl: user.image ?? null,
+            },
+          });
+          token.userId = dbUser.id;
+        }
       }
       return token;
     },
