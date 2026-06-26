@@ -25,6 +25,9 @@ export function HeaderNav({
   const [open, setOpen] = useState(false);
   const nav = ruContent.nav;
 
+  console.log("AAAA");
+  
+
   const links = authed
     ? [
         ...AUTHED_LINKS.map((l) => ({
