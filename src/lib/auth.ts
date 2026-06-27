@@ -27,6 +27,13 @@ export const telegramConfigured = Boolean(
   process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME,
 );
 
+// Dev login is for fast local testing, so it shouldn't force onboarding. We seed a
+// throwaway (unique) phone number, which makes the profile "complete" and skips the
+// onboarding step. Never used in production (provider is disabled there).
+function generateDevPhone() {
+  return "+9965" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+}
+
 const credentialsProvider = CredentialsProvider({
   name: "credentials",
   credentials: {
@@ -49,12 +56,17 @@ const credentialsProvider = CredentialsProvider({
         return null;
       }
 
+      // Backfill a name update and/or a dev phone (so onboarding is skipped).
+      const data: { name?: string; phone?: string } = {};
+      if (providedName && providedName !== existingUser.name) {
+        data.name = providedName;
+      }
+      if (!existingUser.phone) {
+        data.phone = generateDevPhone();
+      }
       const updatedUser =
-        providedName && providedName !== existingUser.name
-          ? await db.user.update({
-              where: { id: existingUser.id },
-              data: { name: providedName },
-            })
+        Object.keys(data).length > 0
+          ? await db.user.update({ where: { id: existingUser.id }, data })
           : existingUser;
 
       return {
@@ -65,7 +77,11 @@ const credentialsProvider = CredentialsProvider({
     }
 
     const createdUser = await db.user.create({
-      data: { email, name: providedName || buildDisplayName(email) },
+      data: {
+        email,
+        name: providedName || buildDisplayName(email),
+        phone: generateDevPhone(),
+      },
     });
 
     return {
@@ -122,6 +138,9 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me",
   session: {
     strategy: "jwt",
+    // Keep users signed in after a single OTP/OAuth login. The session cookie is
+    // refreshed on activity, so an active user effectively stays logged in.
+    maxAge: 60 * 60 * 24 * 90, // 90 days
   },
   pages: {
     signIn: "/auth/sign-in",

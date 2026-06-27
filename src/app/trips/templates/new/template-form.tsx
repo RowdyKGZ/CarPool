@@ -4,45 +4,25 @@ import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
-import { createTrip } from "./actions";
-import { initialTripNewState } from "./state";
+import { createTripTemplate } from "./actions";
+import { initialTripTemplateNewState } from "./state";
 
-export type TripFormDefaults = {
-  pickupLabel?: string;
-  dropoffLabel?: string;
-  pickupCoords?: LatLng | null;
-  dropoffCoords?: LatLng | null;
-  departureAt?: string;
-  pricePerSeat?: number;
-  totalSeats?: number;
-  comment?: string;
-};
+const inputClass =
+  "w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent";
+const errorClass = "text-sm text-[rgb(180,58,0)]";
 
-type TripNewFormProps = {
-  maxSeats: number;
-  vehicleName: string;
-  defaultValues?: TripFormDefaults;
-};
-
-export function TripNewForm({
-  maxSeats,
-  vehicleName,
-  defaultValues,
-}: TripNewFormProps) {
-  const [state, formAction] = useActionState(createTrip, initialTripNewState);
-  const c = ruContent.tripNew;
+export function TripTemplateNewForm() {
+  const [state, formAction] = useActionState(
+    createTripTemplate,
+    initialTripTemplateNewState,
+  );
+  const c = ruContent.tripTemplateNew;
   const cm = ruContent.tripMap;
 
-  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(
-    defaultValues?.pickupCoords ?? null,
-  );
-  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(
-    defaultValues?.dropoffCoords ?? null,
-  );
-  const [pickupLabel, setPickupLabel] = useState(defaultValues?.pickupLabel ?? "");
-  const [dropoffLabel, setDropoffLabel] = useState(
-    defaultValues?.dropoffLabel ?? "",
-  );
+  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(null);
+  const [pickupLabel, setPickupLabel] = useState("");
+  const [dropoffLabel, setDropoffLabel] = useState("");
 
   const handlePick = useCallback(
     (kind: PinKind, coords: LatLng, address: string | null) => {
@@ -73,6 +53,21 @@ export function TripNewForm({
       <input type="hidden" name="pickupLng" value={pickupCoords?.lng ?? ""} />
       <input type="hidden" name="dropoffLat" value={dropoffCoords?.lat ?? ""} />
       <input type="hidden" name="dropoffLng" value={dropoffCoords?.lng ?? ""} />
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground" htmlFor="title">
+          {c.titleLabel}
+        </label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          placeholder={c.titlePlaceholder}
+          className={inputClass}
+        />
+        {state.fieldErrors.title ? (
+          <p className={errorClass}>{state.fieldErrors.title}</p>
+        ) : null}
+      </div>
 
       <div className="space-y-2">
         <label
@@ -88,12 +83,10 @@ export function TripNewForm({
           value={pickupLabel}
           onChange={(e) => setPickupLabel(e.target.value)}
           placeholder={c.pickupPlaceholder}
-          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className={inputClass}
         />
         {state.fieldErrors.pickupLabel ? (
-          <p className="text-sm text-[rgb(180,58,0)]">
-            {state.fieldErrors.pickupLabel}
-          </p>
+          <p className={errorClass}>{state.fieldErrors.pickupLabel}</p>
         ) : null}
       </div>
 
@@ -111,33 +104,29 @@ export function TripNewForm({
           value={dropoffLabel}
           onChange={(e) => setDropoffLabel(e.target.value)}
           placeholder={c.dropoffPlaceholder}
-          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className={inputClass}
         />
         {state.fieldErrors.dropoffLabel ? (
-          <p className="text-sm text-[rgb(180,58,0)]">
-            {state.fieldErrors.dropoffLabel}
-          </p>
+          <p className={errorClass}>{state.fieldErrors.dropoffLabel}</p>
         ) : null}
       </div>
 
       <div className="space-y-2">
         <label
           className="text-sm font-medium text-foreground"
-          htmlFor="departureAt"
+          htmlFor="departureTime"
         >
-          {c.departureLabel}
+          {c.timeLabel}
         </label>
         <input
-          id="departureAt"
-          name="departureAt"
-          type="datetime-local"
-          defaultValue={defaultValues?.departureAt}
-          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
+          id="departureTime"
+          name="departureTime"
+          type="time"
+          className={inputClass}
         />
-        {state.fieldErrors.departureAt ? (
-          <p className="text-sm text-[rgb(180,58,0)]">
-            {state.fieldErrors.departureAt}
-          </p>
+        <p className="text-sm leading-6 text-muted">{c.timeHelper}</p>
+        {state.fieldErrors.departureTime ? (
+          <p className={errorClass}>{state.fieldErrors.departureTime}</p>
         ) : null}
       </div>
 
@@ -155,14 +144,11 @@ export function TripNewForm({
             type="number"
             min={0}
             max={10000}
-            defaultValue={defaultValues?.pricePerSeat}
             placeholder={c.pricePlaceholder}
-            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+            className={inputClass}
           />
           {state.fieldErrors.pricePerSeat ? (
-            <p className="text-sm text-[rgb(180,58,0)]">
-              {state.fieldErrors.pricePerSeat}
-            </p>
+            <p className={errorClass}>{state.fieldErrors.pricePerSeat}</p>
           ) : null}
         </div>
 
@@ -178,41 +164,29 @@ export function TripNewForm({
             name="totalSeats"
             type="number"
             min={1}
-            max={maxSeats}
-            defaultValue={defaultValues?.totalSeats}
-            placeholder={String(maxSeats)}
-            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+            max={8}
+            placeholder="4"
+            className={inputClass}
           />
-          <p className="text-sm leading-6 text-muted">
-            {c.seatsHelper} {vehicleName} — до {maxSeats} мест.
-          </p>
           {state.fieldErrors.totalSeats ? (
-            <p className="text-sm text-[rgb(180,58,0)]">
-              {state.fieldErrors.totalSeats}
-            </p>
+            <p className={errorClass}>{state.fieldErrors.totalSeats}</p>
           ) : null}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label
-          className="text-sm font-medium text-foreground"
-          htmlFor="comment"
-        >
+        <label className="text-sm font-medium text-foreground" htmlFor="comment">
           {c.commentLabel}
         </label>
         <textarea
           id="comment"
           name="comment"
-          defaultValue={defaultValues?.comment}
           placeholder={c.commentPlaceholder}
           rows={3}
-          className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent"
+          className={inputClass}
         />
         {state.fieldErrors.comment ? (
-          <p className="text-sm text-[rgb(180,58,0)]">
-            {state.fieldErrors.comment}
-          </p>
+          <p className={errorClass}>{state.fieldErrors.comment}</p>
         ) : null}
       </div>
 
@@ -222,14 +196,14 @@ export function TripNewForm({
         </div>
       ) : null}
 
-      <TripSubmitButton />
+      <TemplateSubmitButton />
     </form>
   );
 }
 
-function TripSubmitButton() {
+function TemplateSubmitButton() {
   const { pending } = useFormStatus();
-  const c = ruContent.tripNew;
+  const c = ruContent.tripTemplateNew;
 
   return (
     <button

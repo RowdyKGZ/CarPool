@@ -57,6 +57,24 @@ export function getTripDetail(id: string) {
 }
 
 /** Trips authored by a driver, split into upcoming/past with pending-booking counts. */
+/** A driver's upcoming published trips — used to build a template from one. */
+export function listDriverActiveTrips(driverId: string) {
+  return db.trip.findMany({
+    where: {
+      driverId,
+      status: TripStatus.PUBLISHED,
+      departureAt: { gte: new Date() },
+    },
+    select: {
+      id: true,
+      pickupLabel: true,
+      dropoffLabel: true,
+      departureAt: true,
+    },
+    orderBy: { departureAt: "asc" },
+  });
+}
+
 export function listDriverTrips(driverId: string, filter: DriverTripsFilter) {
   const now = new Date();
   return db.trip.findMany({

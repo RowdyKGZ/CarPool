@@ -1,10 +1,16 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
+import { nextBishkekOccurrenceLocal } from "@/lib/datetime";
 import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
-import { TripNewForm } from "./trip-form";
+import { getTemplateForDriver } from "@/server/trip-templates/queries";
+import { TripNewForm, type TripFormDefaults } from "./trip-form";
 
-export default async function TripNewPage() {
+export default async function TripNewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ template?: string }>;
+}) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -23,6 +29,32 @@ export default async function TripNewPage() {
   const vehicleName = `${primaryVehicle.make} ${primaryVehicle.model}`;
   const c = ruContent.tripNew;
 
+  // Launching a template prefills the form with its saved route + a date set to
+  // the next occurrence of the template's time.
+  const { template: templateId } = await searchParams;
+  let defaultValues: TripFormDefaults | undefined;
+  if (templateId) {
+    const template = await getTemplateForDriver(user.id, templateId);
+    if (template) {
+      defaultValues = {
+        pickupLabel: template.pickupLabel,
+        dropoffLabel: template.dropoffLabel,
+        pickupCoords:
+          template.pickupLat != null && template.pickupLng != null
+            ? { lat: template.pickupLat, lng: template.pickupLng }
+            : null,
+        dropoffCoords:
+          template.dropoffLat != null && template.dropoffLng != null
+            ? { lat: template.dropoffLat, lng: template.dropoffLng }
+            : null,
+        departureAt: nextBishkekOccurrenceLocal(template.departureTime),
+        pricePerSeat: template.pricePerSeat,
+        totalSeats: template.totalSeats,
+        comment: template.comment ?? undefined,
+      };
+    }
+  }
+
   return (
     <main className="flex-1">
       <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-6 py-8 sm:px-8">
@@ -38,6 +70,7 @@ export default async function TripNewPage() {
             <TripNewForm
               maxSeats={primaryVehicle.seatsCount}
               vehicleName={vehicleName}
+              defaultValues={defaultValues}
             />
           </div>
         </section>

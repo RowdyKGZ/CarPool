@@ -14,14 +14,17 @@ export const profileSchema = z.object({
     .refine((value) => /^\+\d{9,15}$/.test(value), {
       message: "Укажи телефон в международном формате, например +996555123456.",
     }),
+  // Optional: when left blank, the existing (often Telegram-auto-filled) value is
+  // kept. Validated only when the user actually types something.
   telegramUsername: z
     .string()
     .trim()
     .transform(normalizeTelegramUsername)
-    .refine((value) => /^[A-Za-z0-9_]{3,32}$/.test(value), {
+    .refine((value) => value === "" || /^[A-Za-z0-9_]{3,32}$/.test(value), {
       message:
         "Telegram username должен содержать 3-32 символа: буквы, цифры или _.",
-    }),
+    })
+    .transform((value) => (value === "" ? null : value)),
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;

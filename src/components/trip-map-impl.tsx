@@ -165,10 +165,12 @@ export default function TripMapImpl({
       ) : null}
 
       <div className="relative h-72 overflow-hidden rounded-3xl border border-line">
+        {/* Pan/zoom is always enabled so viewers can explore the route; `interactive`
+            only gates editing (placing/dragging pins). */}
         <Map
           initialViewState={initialViewState}
           mapStyle={MAP_STYLE}
-          interactive={interactive}
+          interactive
           cursor={interactive ? "crosshair" : "grab"}
           onClick={interactive ? handleMapClick : undefined}
           style={{ width: "100%", height: "100%" }}

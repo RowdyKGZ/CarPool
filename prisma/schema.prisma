@@ -82,6 +82,7 @@ model User {
   driverProfile     DriverProfile?
   vehicles          Vehicle[]
   tripsDriven       Trip[]         @relation("TripsDriven")
+  tripTemplates     TripTemplate[] @relation("TripTemplates")
   bookings          Booking[]
   reviewsWritten    Review[]       @relation("ReviewsWritten")
   reviewsReceived   Review[]       @relation("ReviewsReceived")
@@ -247,6 +248,31 @@ model AdminNote {
   @@index([userId])
   @@index([tripId])
   @@index([reportId])
+}
+
+// A driver's reusable route. Holds everything needed to publish a trip except the
+// concrete calendar date — launching a template prefills the trip-create form so
+// recurring daily routes don't have to be re-entered each time.
+model TripTemplate {
+  id            String   @id @default(cuid())
+  driverId      String
+  title         String?
+  pickupLabel   String
+  pickupLat     Float?
+  pickupLng     Float?
+  dropoffLabel  String
+  dropoffLat    Float?
+  dropoffLng    Float?
+  // Default time of day as "HH:MM" (Bishkek wall clock); optional.
+  departureTime String?
+  pricePerSeat  Int
+  totalSeats    Int
+  comment       String?
+  driver        User     @relation("TripTemplates", fields: [driverId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([driverId])
 }
 
 // Short-lived challenge backing the Telegram OTP sign-in flow. The site creates a

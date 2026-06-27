@@ -46,8 +46,14 @@ export async function saveUserProfile(
     ? isUserProfileComplete(existingUser)
     : false;
 
+  // A blank telegramUsername must not wipe an existing (e.g. Telegram-auto-filled)
+  // value — only write it when the user actually provided one.
+  const { telegramUsername, ...rest } = data;
+  const updateData =
+    telegramUsername != null ? { ...rest, telegramUsername } : rest;
+
   try {
-    await db.user.update({ where: { id: userId }, data });
+    await db.user.update({ where: { id: userId }, data: updateData });
   } catch (error) {
     const conflict = conflictField(error);
     if (conflict) return { ok: false, conflict };

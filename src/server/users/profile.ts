@@ -16,7 +16,10 @@ type DriverSetupSubject = {
 };
 
 export function isUserProfileComplete(user: ProfileCompletionSubject) {
-  return Boolean(user.phone?.trim()) && Boolean(user.telegramUsername?.trim());
+  // Only the phone is required to finish onboarding. telegramUsername is optional
+  // (auto-filled from Telegram on OTP sign-in when available), so a returning user
+  // isn't sent back to onboarding just because they have no public @username.
+  return Boolean(user.phone?.trim());
 }
 
 export function isDriverSetupComplete(subject: DriverSetupSubject) {

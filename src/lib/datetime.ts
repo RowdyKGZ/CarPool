@@ -27,6 +27,42 @@ export function bishkekDayBounds(offsetDays: number): { gte: Date; lt: Date } {
   };
 }
 
+/** Time-of-day "HH:MM" of a timestamp on the Bishkek wall clock. */
+export function formatBishkekTime(date: Date): string {
+  const bishkek = new Date(date.getTime() + BISHKEK_OFFSET_MS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(bishkek.getUTCHours())}:${pad(bishkek.getUTCMinutes())}`;
+}
+
+/**
+ * Builds a `datetime-local` value ("YYYY-MM-DDTHH:MM") for the next future
+ * occurrence of a Bishkek wall-clock time. If `time` ("HH:MM") is omitted or the
+ * slot has already passed today, the next day is used. Used to prefill the trip
+ * form when launching a template.
+ */
+export function nextBishkekOccurrenceLocal(time?: string | null): string {
+  const now = new Date();
+  const bishkekNow = new Date(now.getTime() + BISHKEK_OFFSET_MS);
+  const match = time?.match(/^(\d{1,2}):(\d{2})$/);
+  const hours = match ? Math.min(23, Number(match[1])) : bishkekNow.getUTCHours();
+  const minutes = match ? Math.min(59, Number(match[2])) : bishkekNow.getUTCMinutes();
+
+  let y = bishkekNow.getUTCFullYear();
+  let m = bishkekNow.getUTCMonth();
+  let d = bishkekNow.getUTCDate();
+
+  const slotToday = Date.UTC(y, m, d, hours, minutes);
+  if (slotToday <= bishkekNow.getTime()) {
+    const tomorrow = new Date(Date.UTC(y, m, d + 1));
+    y = tomorrow.getUTCFullYear();
+    m = tomorrow.getUTCMonth();
+    d = tomorrow.getUTCDate();
+  }
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${pad(m + 1)}-${pad(d)}T${pad(hours)}:${pad(minutes)}`;
+}
+
 /** Parses a `datetime-local` value ("YYYY-MM-DDTHH:MM"[:SS]) as Bishkek wall time. */
 export function parseBishkekDatetime(value: string): Date | null {
   const normalized =

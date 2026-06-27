@@ -10,6 +10,15 @@ export const TELEGRAM_LOGIN_PREFIX = "tg_";
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_OTP_ATTEMPTS = 5;
 
+/** True if no other user already claims this (globally unique) Telegram username. */
+async function isTelegramUsernameFree(username: string): Promise<boolean> {
+  const taken = await db.user.findUnique({
+    where: { telegramUsername: username },
+    select: { id: true },
+  });
+  return !taken;
+}
+
 export type StartTelegramLoginResult = { nonce: string; deepLink: string };
 
 /** Creates a fresh challenge and returns the deep link the user opens in Telegram.
@@ -113,20 +122,32 @@ export async function verifyTelegramOtp(
 
   if (existing) {
     if (existing.status !== UserStatus.ACTIVE) return { ok: false, reason: "blocked" };
+    // Backfill telegramUsername from Telegram if we don't have it yet (and it's
+    // free) — one less thing the user has to type on the onboarding step.
+    const backfillUsername =
+      !existing.telegramUsername && username && (await isTelegramUsernameFree(username))
+        ? username
+        : undefined;
     const user = await db.user.update({
       where: { id: existing.id },
-      data: { telegramChatId: challenge.telegramChatId },
+      data: {
+        telegramChatId: challenge.telegramChatId,
+        ...(backfillUsername ? { telegramUsername: backfillUsername } : {}),
+      },
     });
     return { ok: true, user: { id: user.id, email: user.email, name: user.name } };
   }
 
-  // telegramUsername is intentionally left for the onboarding step (it's a unique
-  // field the user confirms there), so first-time creation can't hit a conflict.
+  // Prefill telegramUsername from Telegram so the user doesn't re-enter it; only
+  // when free, so first-time creation can't hit the unique constraint.
+  const telegramUsername =
+    username && (await isTelegramUsernameFree(username)) ? username : null;
   const name = challenge.firstName?.trim() || (username ? `@${username}` : "Пользователь Telegram");
   const created = await db.user.create({
     data: {
       name,
       telegramUserId,
+      telegramUsername,
       telegramChatId: challenge.telegramChatId,
       isVerified: true,
     },

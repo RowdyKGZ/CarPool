@@ -79,6 +79,12 @@ export default async function MyTripsPage({
               {tab.label}
             </Link>
           ))}
+          <Link
+            href="/trips/templates"
+            className="ml-auto rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent"
+          >
+            {c.templatesLink}
+          </Link>
         </div>
 
         {trips.length === 0 ? (
