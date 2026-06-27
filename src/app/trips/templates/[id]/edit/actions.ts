@@ -3,21 +3,26 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { createTemplate } from "@/server/trip-templates/mutations";
+import { updateTemplate } from "@/server/trip-templates/mutations";
 import {
   readTripTemplateForm,
   tripTemplateCreateSchema,
 } from "@/server/trip-templates/schema";
-import type { TripTemplateFormState } from "../template-state";
+import type { TripTemplateFormState } from "../../template-state";
 
-export async function createTripTemplate(
+export async function updateTripTemplate(
   _prevState: TripTemplateFormState,
   formData: FormData,
 ): Promise<TripTemplateFormState> {
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect("/auth/sign-in?callbackUrl=/trips/templates/new");
+    redirect("/auth/sign-in?callbackUrl=/trips/templates");
+  }
+
+  const templateId = String(formData.get("templateId") ?? "");
+  if (!templateId) {
+    redirect("/trips/templates");
   }
 
   const parsed = tripTemplateCreateSchema.safeParse(
@@ -42,7 +47,7 @@ export async function createTripTemplate(
     };
   }
 
-  await createTemplate(session.user.id, parsed.data);
+  await updateTemplate(session.user.id, templateId, parsed.data);
 
   redirect("/trips/templates");
 }

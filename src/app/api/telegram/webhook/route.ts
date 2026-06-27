@@ -42,16 +42,18 @@ export async function POST(request: Request) {
 
     if (param?.startsWith(TELEGRAM_LOGIN_PREFIX) && from?.id != null) {
       const nonce = param.slice(TELEGRAM_LOGIN_PREFIX.length);
-      const code = await deliverTelegramOtp(
+      const result = await deliverTelegramOtp(
         nonce,
         { id: from.id, username: from.username, first_name: from.first_name },
         chatId,
       );
       await sendTelegramMessage(
         chatId,
-        code
-          ? ruContent.telegramBot.loginCode(code)
-          : ruContent.telegramBot.loginInvalid,
+        result.ok
+          ? ruContent.telegramBot.loginCode(result.code)
+          : result.reason === "rate_limited"
+            ? ruContent.telegramBot.loginRateLimited
+            : ruContent.telegramBot.loginInvalid,
       );
     } else if (param) {
       const result = await linkTelegramChat(param, chatId);

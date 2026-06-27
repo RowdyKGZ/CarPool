@@ -4,25 +4,55 @@ import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
-import { createTripTemplate } from "./actions";
-import { initialTripTemplateNewState } from "./state";
+import {
+  initialTripTemplateFormState,
+  type TripTemplateFormDefaults,
+  type TripTemplateFormState,
+} from "./template-state";
 
 const inputClass =
   "w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-accent";
 const errorClass = "text-sm text-[rgb(180,58,0)]";
 
-export function TripTemplateNewForm() {
+type TemplateFormAction = (
+  state: TripTemplateFormState,
+  formData: FormData,
+) => Promise<TripTemplateFormState>;
+
+type TripTemplateFormProps = {
+  action: TemplateFormAction;
+  defaultValues?: TripTemplateFormDefaults;
+  templateId?: string;
+};
+
+export function TripTemplateForm({
+  action,
+  defaultValues,
+  templateId,
+}: TripTemplateFormProps) {
   const [state, formAction] = useActionState(
-    createTripTemplate,
-    initialTripTemplateNewState,
+    action,
+    initialTripTemplateFormState,
   );
   const c = ruContent.tripTemplateNew;
   const cm = ruContent.tripMap;
 
-  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(null);
-  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(null);
-  const [pickupLabel, setPickupLabel] = useState("");
-  const [dropoffLabel, setDropoffLabel] = useState("");
+  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(
+    defaultValues?.pickupLat != null && defaultValues?.pickupLng != null
+      ? { lat: defaultValues.pickupLat, lng: defaultValues.pickupLng }
+      : null,
+  );
+  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(
+    defaultValues?.dropoffLat != null && defaultValues?.dropoffLng != null
+      ? { lat: defaultValues.dropoffLat, lng: defaultValues.dropoffLng }
+      : null,
+  );
+  const [pickupLabel, setPickupLabel] = useState(
+    defaultValues?.pickupLabel ?? "",
+  );
+  const [dropoffLabel, setDropoffLabel] = useState(
+    defaultValues?.dropoffLabel ?? "",
+  );
 
   const handlePick = useCallback(
     (kind: PinKind, coords: LatLng, address: string | null) => {
@@ -39,6 +69,10 @@ export function TripTemplateNewForm() {
 
   return (
     <form action={formAction} className="space-y-5">
+      {templateId ? (
+        <input type="hidden" name="templateId" value={templateId} />
+      ) : null}
+
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">{cm.heading}</p>
         <TripMap
@@ -53,6 +87,7 @@ export function TripTemplateNewForm() {
       <input type="hidden" name="pickupLng" value={pickupCoords?.lng ?? ""} />
       <input type="hidden" name="dropoffLat" value={dropoffCoords?.lat ?? ""} />
       <input type="hidden" name="dropoffLng" value={dropoffCoords?.lng ?? ""} />
+
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground" htmlFor="title">
           {c.titleLabel}
@@ -61,6 +96,7 @@ export function TripTemplateNewForm() {
           id="title"
           name="title"
           type="text"
+          defaultValue={defaultValues?.title}
           placeholder={c.titlePlaceholder}
           className={inputClass}
         />
@@ -122,6 +158,7 @@ export function TripTemplateNewForm() {
           id="departureTime"
           name="departureTime"
           type="time"
+          defaultValue={defaultValues?.departureTime}
           className={inputClass}
         />
         <p className="text-sm leading-6 text-muted">{c.timeHelper}</p>
@@ -144,6 +181,7 @@ export function TripTemplateNewForm() {
             type="number"
             min={0}
             max={10000}
+            defaultValue={defaultValues?.pricePerSeat}
             placeholder={c.pricePlaceholder}
             className={inputClass}
           />
@@ -165,6 +203,7 @@ export function TripTemplateNewForm() {
             type="number"
             min={1}
             max={8}
+            defaultValue={defaultValues?.totalSeats}
             placeholder="4"
             className={inputClass}
           />
@@ -181,6 +220,7 @@ export function TripTemplateNewForm() {
         <textarea
           id="comment"
           name="comment"
+          defaultValue={defaultValues?.comment}
           placeholder={c.commentPlaceholder}
           rows={3}
           className={inputClass}

@@ -65,6 +65,8 @@ export const ruContent = {
       `Ваш код для входа в CarPool: ${code}\n\nКод действует 10 минут. Никому его не сообщайте.`,
     loginInvalid:
       "Ссылка для входа недействительна или истекла. Запроси новую на сайте.",
+    loginRateLimited:
+      "Слишком много запросов кода. Подожди немного и попробуй снова.",
   },
   onboarding: {
     eyebrow: "Профиль пользователя",
@@ -202,6 +204,9 @@ export const ruContent = {
     statusCompleted: "Завершена",
     currency: "сом",
     backToDashboard: "В кабинет",
+    saveAsTemplate: "Сохранить как шаблон",
+    repeat: "Повторить поездку",
+    ownerActionsTitle: "Действия с маршрутом",
   },
   driverBookings: {
     sectionTitle: "Заявки на бронирование",
@@ -358,6 +363,7 @@ export const ruContent = {
     empty: "У тебя пока нет шаблонов. Создай первый — и запускай поездки по нему каждый день.",
     launch: "Запустить",
     reverse: "Обратный",
+    edit: "Изменить",
     delete: "Удалить",
     deleteConfirm: "Удалить шаблон?",
     noTime: "Время не задано",
@@ -394,6 +400,10 @@ export const ruContent = {
     submit: "Сохранить шаблон",
     pending: "Сохраняем...",
     genericError: "Проверь данные шаблона и попробуй снова.",
+  },
+  tripTemplateEdit: {
+    eyebrow: "Редактирование шаблона",
+    title: "Измени шаблон маршрута.",
   },
   booking: {
     sectionTitle: "Бронирование",

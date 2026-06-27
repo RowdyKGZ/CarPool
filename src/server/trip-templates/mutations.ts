@@ -31,6 +31,31 @@ export async function createTemplate(
   return { ok: true, id: template.id };
 }
 
+/** Updates a template's fields, scoped to its owner. */
+export async function updateTemplate(
+  driverId: string,
+  templateId: string,
+  data: TripTemplateCreateInput,
+): Promise<TemplateResult> {
+  const { count } = await db.tripTemplate.updateMany({
+    where: { id: templateId, driverId },
+    data: {
+      title: data.title,
+      pickupLabel: data.pickupLabel,
+      pickupLat: data.pickupLat ?? null,
+      pickupLng: data.pickupLng ?? null,
+      dropoffLabel: data.dropoffLabel,
+      dropoffLat: data.dropoffLat ?? null,
+      dropoffLng: data.dropoffLng ?? null,
+      departureTime: data.departureTime,
+      pricePerSeat: data.pricePerSeat,
+      totalSeats: data.totalSeats,
+      comment: data.comment,
+    },
+  });
+  return count > 0 ? { ok: true, id: templateId } : { ok: false, reason: "NOT_FOUND" };
+}
+
 /** Deletes a template, scoped to its owner. */
 export async function deleteTemplate(
   driverId: string,

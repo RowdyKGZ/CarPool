@@ -9,6 +9,9 @@ export const TELEGRAM_LOGIN_PREFIX = "tg_";
 
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_OTP_ATTEMPTS = 5;
+// A single Telegram account may request at most this many codes per window.
+const OTP_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_OTP_DELIVERIES = 5;
 
 /** True if no other user already claims this (globally unique) Telegram username. */
 async function isTelegramUsernameFree(username: string): Promise<boolean> {
@@ -27,6 +30,14 @@ export async function startTelegramLogin(): Promise<StartTelegramLoginResult | n
   const botUsername = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, "");
   if (!botUsername) return null;
 
+  // Opportunistic cleanup: drop expired and already-consumed challenges so the
+  // table doesn't accumulate dead rows (no separate cron needed).
+  await db.telegramAuthChallenge.deleteMany({
+    where: {
+      OR: [{ expiresAt: { lt: new Date() } }, { consumedAt: { not: null } }],
+    },
+  });
+
   const nonce = randomUUID().replace(/-/g, "");
   await db.telegramAuthChallenge.create({
     data: { nonce, expiresAt: new Date(Date.now() + OTP_TTL_MS) },
@@ -44,19 +55,36 @@ export type TelegramSender = {
   first_name?: string | null;
 };
 
+export type DeliverTelegramOtpResult =
+  | { ok: true; code: string }
+  | { ok: false; reason: "invalid" | "rate_limited" };
+
 /**
  * Webhook side: the user opened the deep link, so we know their Telegram identity.
- * Generate + store a 6-digit code and return it for the bot to send. Returns null
- * when the nonce is unknown, expired or already consumed.
+ * Generate + store a 6-digit code and return it for the bot to send. Returns an
+ * error when the nonce is unknown/expired/consumed, or when this Telegram account
+ * has requested too many codes recently.
  */
 export async function deliverTelegramOtp(
   nonce: string,
   sender: TelegramSender,
   chatId: number | string,
-): Promise<string | null> {
+): Promise<DeliverTelegramOtpResult> {
   const challenge = await db.telegramAuthChallenge.findUnique({ where: { nonce } });
   if (!challenge || challenge.consumedAt || challenge.expiresAt < new Date()) {
-    return null;
+    return { ok: false, reason: "invalid" };
+  }
+
+  // Throttle code requests per Telegram account so the bot can't be used to spam.
+  const recentDeliveries = await db.telegramAuthChallenge.count({
+    where: {
+      telegramUserId: String(sender.id),
+      code: { not: null },
+      createdAt: { gte: new Date(Date.now() - OTP_RATE_WINDOW_MS) },
+    },
+  });
+  if (recentDeliveries >= MAX_OTP_DELIVERIES) {
+    return { ok: false, reason: "rate_limited" };
   }
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -71,7 +99,7 @@ export async function deliverTelegramOtp(
       attempts: 0,
     },
   });
-  return code;
+  return { ok: true, code };
 }
 
 export type VerifiedTelegramUser = {

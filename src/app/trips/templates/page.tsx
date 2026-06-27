@@ -134,6 +134,12 @@ export default async function TripTemplatesPage() {
                     >
                       {c.launch} →
                     </Link>
+                    <Link
+                      href={`/trips/templates/${template.id}/edit`}
+                      className="rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent"
+                    >
+                      {c.edit}
+                    </Link>
                     <form action={reverseTemplateAction}>
                       <input type="hidden" name="templateId" value={template.id} />
                       <button

@@ -14,22 +14,16 @@ const signInSchema = z.object({
   name: z.string().trim().max(80).optional(),
 });
 
-/** Production target: Google sign-in. Available once the OAuth client is set. */
 export const googleConfigured = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
 );
 
-/** Dev-only email login kept for local testing; disabled in production. */
 export const devLoginEnabled = process.env.NODE_ENV !== "production";
 
-/** Telegram OTP sign-in, available once the bot token + username are configured. */
 export const telegramConfigured = Boolean(
   process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME,
 );
 
-// Dev login is for fast local testing, so it shouldn't force onboarding. We seed a
-// throwaway (unique) phone number, which makes the profile "complete" and skips the
-// onboarding step. Never used in production (provider is disabled there).
 function generateDevPhone() {
   return "+9965" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
 }
@@ -56,7 +50,6 @@ const credentialsProvider = CredentialsProvider({
         return null;
       }
 
-      // Backfill a name update and/or a dev phone (so onboarding is skipped).
       const data: { name?: string; phone?: string } = {};
       if (providedName && providedName !== existingUser.name) {
         data.name = providedName;
@@ -138,8 +131,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me",
   session: {
     strategy: "jwt",
-    // Keep users signed in after a single OTP/OAuth login. The session cookie is
-    // refreshed on activity, so an active user effectively stays logged in.
     maxAge: 60 * 60 * 24 * 90, // 90 days
   },
   pages: {
@@ -147,8 +138,6 @@ export const authOptions: NextAuthOptions = {
   },
   providers,
   callbacks: {
-    // Block blocked/suspended users at the door. Telegram OTP already resolves +
-    // status-checks the user inside verifyTelegramOtp, so it's allowed through.
     async signIn({ user, account }) {
       if (account?.provider === TELEGRAM_PROVIDER_ID) return true;
       const email = user.email?.toLowerCase();
@@ -159,9 +148,6 @@ export const authOptions: NextAuthOptions = {
       });
       return !existing || existing.status === UserStatus.ACTIVE;
     },
-    // Resolve our DB user id so every provider maps onto the same User row. Runs
-    // only on initial sign-in. Telegram OTP already returns our User.id (no email),
-    // so we trust it directly; email providers find-or-create by email.
     async jwt({ token, user, account }) {
       if (user) {
         if (account?.provider === TELEGRAM_PROVIDER_ID) {

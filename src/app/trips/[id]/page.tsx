@@ -18,6 +18,7 @@ import { DriverBookings, type DriverBooking } from "./driver-bookings";
 import { ReportForm } from "./report-form";
 import { ReviewsSection } from "./reviews-section";
 import { TripControls } from "./trip-controls";
+import { repeatTripAction, saveTripAsTemplateAction } from "./trip-actions";
 
 const TRIP_STATUS_STYLE: Record<TripStatus, string> = {
   PUBLISHED: "bg-[rgba(16,185,129,0.12)] text-[rgb(5,150,105)]",
@@ -169,6 +170,31 @@ export default async function TripPage({
                     <TripControls tripId={trip.id} />
                   </div>
                 ) : null}
+                <div className="mb-8 border-b border-line pb-7">
+                  <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
+                    {c.ownerActionsTitle}
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <form action={repeatTripAction} className="flex-1">
+                      <input type="hidden" name="tripId" value={trip.id} />
+                      <button
+                        type="submit"
+                        className="w-full rounded-full bg-accent py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+                      >
+                        {c.repeat}
+                      </button>
+                    </form>
+                    <form action={saveTripAsTemplateAction} className="flex-1">
+                      <input type="hidden" name="tripId" value={trip.id} />
+                      <button
+                        type="submit"
+                        className="w-full rounded-full border border-line py-2.5 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+                      >
+                        {c.saveAsTemplate}
+                      </button>
+                    </form>
+                  </div>
+                </div>
                 <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground">
                   {ruContent.driverBookings.sectionTitle}
                 </p>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
-import { TripTemplateNewForm } from "./template-form";
+import { TripTemplateForm } from "../template-form";
+import { createTripTemplate } from "./actions";
 
 export default async function TripTemplateNewPage() {
   const session = await getAuthSession();
@@ -33,7 +34,7 @@ export default async function TripTemplateNewPage() {
           </h1>
           <p className="mt-4 text-base leading-7 text-muted">{c.description}</p>
           <div className="mt-8">
-            <TripTemplateNewForm />
+            <TripTemplateForm action={createTripTemplate} />
           </div>
         </section>
       </div>

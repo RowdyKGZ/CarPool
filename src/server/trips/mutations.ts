@@ -1,5 +1,10 @@
 import { BookingStatus, TripStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import {
+  formatBishkekTime,
+  nextBishkekOccurrenceLocal,
+  parseBishkekDatetime,
+} from "@/lib/datetime";
 import { ACTIVE_BOOKING_STATUSES } from "@/server/bookings/schema";
 import { notifyTripCancelled } from "@/server/notifications/events";
 import type { TripCreateInput } from "./schema";
@@ -50,6 +55,48 @@ export function createTrip(args: {
       comment: data.comment,
     },
   });
+}
+
+export type RepeatTripResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: "NOT_FOUND" };
+
+/**
+ * Clones one of the driver's trips into a fresh published trip for the next
+ * occurrence of the original's time of day. Seats start fully available.
+ */
+export async function repeatTrip(
+  driverId: string,
+  tripId: string,
+): Promise<RepeatTripResult> {
+  const trip = await db.trip.findFirst({ where: { id: tripId, driverId } });
+  if (!trip) return { ok: false, reason: "NOT_FOUND" };
+
+  const departureAt =
+    parseBishkekDatetime(
+      nextBishkekOccurrenceLocal(formatBishkekTime(trip.departureAt)),
+    ) ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const created = await db.trip.create({
+    data: {
+      driverId: trip.driverId,
+      vehicleId: trip.vehicleId,
+      pickupLabel: trip.pickupLabel,
+      pickupLat: trip.pickupLat,
+      pickupLng: trip.pickupLng,
+      dropoffLabel: trip.dropoffLabel,
+      dropoffLat: trip.dropoffLat,
+      dropoffLng: trip.dropoffLng,
+      departureAt,
+      pricePerSeat: trip.pricePerSeat,
+      totalSeats: trip.totalSeats,
+      availableSeats: trip.totalSeats,
+      comment: trip.comment,
+    },
+    select: { id: true },
+  });
+
+  return { ok: true, id: created.id };
 }
 
 /**
