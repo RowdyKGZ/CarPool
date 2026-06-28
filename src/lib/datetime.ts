@@ -27,6 +27,13 @@ export function bishkekDayBounds(offsetDays: number): { gte: Date; lt: Date } {
   };
 }
 
+/** Full `datetime-local` value ("YYYY-MM-DDTHH:MM") of a timestamp in Bishkek. */
+export function formatBishkekDatetimeLocal(date: Date): string {
+  const b = new Date(date.getTime() + BISHKEK_OFFSET_MS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${b.getUTCFullYear()}-${pad(b.getUTCMonth() + 1)}-${pad(b.getUTCDate())}T${pad(b.getUTCHours())}:${pad(b.getUTCMinutes())}`;
+}
+
 /** Time-of-day "HH:MM" of a timestamp on the Bishkek wall clock. */
 export function formatBishkekTime(date: Date): string {
   const bishkek = new Date(date.getTime() + BISHKEK_OFFSET_MS);

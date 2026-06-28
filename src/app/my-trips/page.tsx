@@ -8,6 +8,7 @@ import {
   listDriverTrips,
   type DriverTripsFilter,
 } from "@/server/trips/queries";
+import { autoCompleteDepartedTrips } from "@/server/trips/mutations";
 
 const TRIP_STATUS_LABEL: Record<TripStatus, string> = {
   PUBLISHED: ruContent.myTrips.statusPublished,
@@ -34,6 +35,7 @@ export default async function MyTripsPage({
   const { view } = await searchParams;
   const filter: DriverTripsFilter = view === "past" ? "past" : "upcoming";
 
+  await autoCompleteDepartedTrips({ driverId: session.user.id });
   const trips = await listDriverTrips(session.user.id, filter);
 
   const c = ruContent.myTrips;

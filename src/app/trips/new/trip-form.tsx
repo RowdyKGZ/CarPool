@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
 import { createTrip } from "./actions";
-import { initialTripNewState } from "./state";
+import { initialTripNewState, type TripNewState } from "./state";
 
 export type TripFormDefaults = {
   pickupLabel?: string;
@@ -18,18 +18,31 @@ export type TripFormDefaults = {
   comment?: string;
 };
 
+type TripFormAction = (
+  state: TripNewState,
+  formData: FormData,
+) => Promise<TripNewState>;
+
 type TripNewFormProps = {
   maxSeats: number;
   vehicleName: string;
   defaultValues?: TripFormDefaults;
+  action?: TripFormAction;
+  tripId?: string;
+  submitLabel?: string;
+  pendingLabel?: string;
 };
 
 export function TripNewForm({
   maxSeats,
   vehicleName,
   defaultValues,
+  action = createTrip,
+  tripId,
+  submitLabel,
+  pendingLabel,
 }: TripNewFormProps) {
-  const [state, formAction] = useActionState(createTrip, initialTripNewState);
+  const [state, formAction] = useActionState(action, initialTripNewState);
   const c = ruContent.tripNew;
   const cm = ruContent.tripMap;
 
@@ -59,6 +72,7 @@ export function TripNewForm({
 
   return (
     <form action={formAction} className="space-y-5">
+      {tripId ? <input type="hidden" name="tripId" value={tripId} /> : null}
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">{cm.heading}</p>
         <TripMap
@@ -222,12 +236,18 @@ export function TripNewForm({
         </div>
       ) : null}
 
-      <TripSubmitButton />
+      <TripSubmitButton label={submitLabel} pendingLabel={pendingLabel} />
     </form>
   );
 }
 
-function TripSubmitButton() {
+function TripSubmitButton({
+  label,
+  pendingLabel,
+}: {
+  label?: string;
+  pendingLabel?: string;
+}) {
   const { pending } = useFormStatus();
   const c = ruContent.tripNew;
 
@@ -237,7 +257,7 @@ function TripSubmitButton() {
       disabled={pending}
       className="w-full rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-70"
     >
-      {pending ? c.pending : c.submit}
+      {pending ? (pendingLabel ?? c.pending) : (label ?? c.submit)}
     </button>
   );
 }

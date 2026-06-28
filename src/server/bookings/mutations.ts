@@ -13,6 +13,7 @@ export type CreateBookingResult =
       ok: false;
       reason:
         | "TRIP_UNAVAILABLE"
+        | "TRIP_DEPARTED"
         | "OWN_TRIP"
         | "NOT_ENOUGH_SEATS"
         | "ALREADY_BOOKED"
@@ -41,11 +42,19 @@ export async function createBooking(
     await db.$transaction(async (tx) => {
       const trip = await tx.trip.findUnique({
         where: { id: tripId },
-        select: { status: true, availableSeats: true, driverId: true },
+        select: {
+          status: true,
+          availableSeats: true,
+          driverId: true,
+          departureAt: true,
+        },
       });
 
       if (!trip || trip.status !== TripStatus.PUBLISHED) {
         throw new Error("TRIP_UNAVAILABLE");
+      }
+      if (trip.departureAt <= new Date()) {
+        throw new Error("TRIP_DEPARTED");
       }
       if (trip.driverId === passengerId) {
         throw new Error("OWN_TRIP");
@@ -74,6 +83,7 @@ export async function createBooking(
     const reason = e instanceof Error ? e.message : "";
     switch (reason) {
       case "TRIP_UNAVAILABLE":
+      case "TRIP_DEPARTED":
       case "OWN_TRIP":
       case "NOT_ENOUGH_SEATS":
       case "ALREADY_BOOKED":

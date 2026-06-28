@@ -51,6 +51,7 @@ export const ruContent = {
       unavailable: "Вход через Telegram временно недоступен.",
       errors: {
         start: "Не удалось начать вход через Telegram. Попробуй ещё раз.",
+        rateLimited: "Слишком много попыток входа. Подожди немного и попробуй снова.",
         invalid: "Неверный код. Проверь и попробуй снова.",
         expired: "Срок действия кода истёк. Запроси новый.",
         not_sent: "Сначала открой бота в Telegram, чтобы получить код.",
@@ -83,7 +84,8 @@ export const ruContent = {
     submit: "Сохранить профиль",
     pending: "Сохраняем профиль...",
     genericError: "Проверь поля формы и попробуй снова.",
-    uniquePhoneError: "Этот номер уже привязан к другому аккаунту.",
+    uniquePhoneError:
+      "Этот номер уже привязан к другому аккаунту. Похоже, ты регистрировался раньше другим способом (Google или Telegram) — выйди и войди тем же способом, чтобы попасть в свой аккаунт.",
     uniqueTelegramError: "Этот Telegram username уже используется.",
   },
   driverOnboarding: {
@@ -174,6 +176,15 @@ export const ruContent = {
     pastDateError: "Дата выезда должна быть в будущем.",
     invalidDateError: "Некорректная дата выезда.",
   },
+  tripEdit: {
+    eyebrow: "Редактирование поездки",
+    title: "Измени детали поездки.",
+    submit: "Сохранить изменения",
+    pending: "Сохраняем...",
+    seatsBelowBookedError:
+      "Нельзя сделать мест меньше, чем уже забронировано.",
+    notEditableError: "Эту поездку нельзя отредактировать.",
+  },
   tripMap: {
     heading: "Точки на карте",
     helper:
@@ -206,6 +217,7 @@ export const ruContent = {
     backToDashboard: "В кабинет",
     saveAsTemplate: "Сохранить как шаблон",
     repeat: "Повторить поездку",
+    edit: "Изменить",
     ownerActionsTitle: "Действия с маршрутом",
   },
   driverBookings: {
@@ -435,6 +447,8 @@ export const ruContent = {
     currency: "сом",
     openTrip: "Открыть",
     createTripCta: "Создать поездку",
+    prevPage: "Назад",
+    nextPage: "Дальше",
   },
   common: {
     authRequired: "Сначала войди в аккаунт.",

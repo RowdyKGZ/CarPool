@@ -1,4 +1,4 @@
-import { BookingStatus, TripStatus } from "@prisma/client";
+import { BookingStatus, Prisma, TripStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   formatBishkekTime,
@@ -57,6 +57,46 @@ export function createTrip(args: {
   });
 }
 
+/**
+ * Lazily completes published trips whose departure has passed (same cascade as
+ * `completeTrip`): confirmed bookings → COMPLETED (unlocking reviews), leftover
+ * pending → CANCELLED, driver's tripsCompleted incremented. Called on read paths
+ * (trip detail / my-trips / my-bookings) since there's no scheduler. Returns the
+ * number of trips completed.
+ */
+export async function autoCompleteDepartedTrips(
+  scope: Prisma.TripWhereInput,
+): Promise<number> {
+  const now = new Date();
+  const departed = await db.trip.findMany({
+    where: { ...scope, status: TripStatus.PUBLISHED, departureAt: { lt: now } },
+    select: { id: true, driverId: true },
+  });
+
+  for (const trip of departed) {
+    await db.$transaction([
+      db.trip.update({
+        where: { id: trip.id },
+        data: { status: TripStatus.COMPLETED },
+      }),
+      db.booking.updateMany({
+        where: { tripId: trip.id, status: BookingStatus.CONFIRMED },
+        data: { status: BookingStatus.COMPLETED },
+      }),
+      db.booking.updateMany({
+        where: { tripId: trip.id, status: BookingStatus.PENDING },
+        data: { status: BookingStatus.CANCELLED, cancelledAt: now },
+      }),
+      db.driverProfile.updateMany({
+        where: { userId: trip.driverId },
+        data: { tripsCompleted: { increment: 1 } },
+      }),
+    ]);
+  }
+
+  return departed.length;
+}
+
 export type RepeatTripResult =
   | { ok: true; id: string }
   | { ok: false; reason: "NOT_FOUND" };
@@ -69,13 +109,33 @@ export async function repeatTrip(
   driverId: string,
   tripId: string,
 ): Promise<RepeatTripResult> {
-  const trip = await db.trip.findFirst({ where: { id: tripId, driverId } });
+  const trip = await db.trip.findFirst({
+    where: { id: tripId, driverId },
+    include: { vehicle: { select: { seatsCount: true } } },
+  });
   if (!trip) return { ok: false, reason: "NOT_FOUND" };
 
   const departureAt =
     parseBishkekDatetime(
       nextBishkekOccurrenceLocal(formatBishkekTime(trip.departureAt)),
     ) ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  // Idempotent: if an identical published trip already exists for that slot (e.g.
+  // "Повторить" tapped twice), return it instead of creating a duplicate.
+  const duplicate = await db.trip.findFirst({
+    where: {
+      driverId,
+      status: TripStatus.PUBLISHED,
+      pickupLabel: trip.pickupLabel,
+      dropoffLabel: trip.dropoffLabel,
+      departureAt,
+    },
+    select: { id: true },
+  });
+  if (duplicate) return { ok: true, id: duplicate.id };
+
+  // Clamp seats to the current vehicle capacity (it may have changed since).
+  const totalSeats = Math.min(trip.totalSeats, trip.vehicle.seatsCount);
 
   const created = await db.trip.create({
     data: {
@@ -89,14 +149,69 @@ export async function repeatTrip(
       dropoffLng: trip.dropoffLng,
       departureAt,
       pricePerSeat: trip.pricePerSeat,
-      totalSeats: trip.totalSeats,
-      availableSeats: trip.totalSeats,
+      totalSeats,
+      availableSeats: totalSeats,
       comment: trip.comment,
     },
     select: { id: true },
   });
 
   return { ok: true, id: created.id };
+}
+
+export type UpdateTripResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "NOT_FOUND" | "FORBIDDEN" | "NOT_PUBLISHED" | "SEATS_BELOW_BOOKED";
+    };
+
+/**
+ * Driver edits a published trip. Recomputes availableSeats from active bookings so
+ * the counter stays consistent, and refuses to drop totalSeats below seats already
+ * booked.
+ */
+export async function updateTrip(args: {
+  driverId: string;
+  tripId: string;
+  departureAt: Date;
+  data: TripCreateInput;
+}): Promise<UpdateTripResult> {
+  const { driverId, tripId, departureAt, data } = args;
+
+  const guard = await loadOwnedPublishedTrip(driverId, tripId);
+  if (!guard.ok) {
+    return { ok: false, reason: guard.reason };
+  }
+
+  const active = await db.booking.aggregate({
+    where: { tripId, status: { in: ACTIVE_BOOKING_STATUSES } },
+    _sum: { seatsRequested: true },
+  });
+  const bookedSeats = active._sum.seatsRequested ?? 0;
+
+  if (data.totalSeats < bookedSeats) {
+    return { ok: false, reason: "SEATS_BELOW_BOOKED" };
+  }
+
+  await db.trip.update({
+    where: { id: tripId },
+    data: {
+      pickupLabel: data.pickupLabel,
+      pickupLat: data.pickupLat ?? null,
+      pickupLng: data.pickupLng ?? null,
+      dropoffLabel: data.dropoffLabel,
+      dropoffLat: data.dropoffLat ?? null,
+      dropoffLng: data.dropoffLng ?? null,
+      departureAt,
+      pricePerSeat: data.pricePerSeat,
+      totalSeats: data.totalSeats,
+      availableSeats: data.totalSeats - bookedSeats,
+      comment: data.comment,
+    },
+  });
+
+  return { ok: true };
 }
 
 /**

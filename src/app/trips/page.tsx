@@ -6,15 +6,24 @@ import { listPublishedTrips, type TripsDateFilter } from "@/server/trips/queries
 export default async function TripsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; page?: string }>;
 }) {
-  const { date } = await searchParams;
+  const { date, page: pageParam } = await searchParams;
   const filter: TripsDateFilter =
     date === "tomorrow" ? "tomorrow" : date === "all" ? "all" : "today";
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
 
-  const trips = await listPublishedTrips(filter);
+  const { trips, page, hasMore } = await listPublishedTrips(filter, requestedPage);
 
   const c = ruContent.tripsList;
+
+  const pageHref = (p: number) => {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/trips?${qs}` : "/trips";
+  };
 
   const tabs: { label: string; value: TripsDateFilter; href: string }[] = [
     { label: c.filterToday, value: "today", href: "/trips" },
@@ -101,6 +110,31 @@ export default async function TripsPage({
               </li>
             ))}
           </ul>
+        )}
+
+        {(page > 1 || hasMore) && (
+          <div className="mt-6 flex items-center justify-between gap-3">
+            {page > 1 ? (
+              <Link
+                href={pageHref(page - 1)}
+                className="rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent"
+              >
+                ← {c.prevPage}
+              </Link>
+            ) : (
+              <span />
+            )}
+            {hasMore ? (
+              <Link
+                href={pageHref(page + 1)}
+                className="rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent"
+              >
+                {c.nextPage} →
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
         )}
       </div>
     </main>

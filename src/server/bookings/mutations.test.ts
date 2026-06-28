@@ -23,13 +23,20 @@ function mockTransaction(tx: Tx) {
   );
 }
 
+const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
 function makeTx(overrides: Partial<{ trip: unknown; existing: unknown }> = {}): Tx {
   return {
     trip: {
       findUnique: vi.fn().mockResolvedValue(
         "trip" in overrides
           ? overrides.trip
-          : { status: TripStatus.PUBLISHED, availableSeats: 4, driverId: "driver" },
+          : {
+              status: TripStatus.PUBLISHED,
+              availableSeats: 4,
+              driverId: "driver",
+              departureAt: future,
+            },
       ),
       update: vi.fn().mockResolvedValue({}),
     },
@@ -55,10 +62,32 @@ describe("createBooking conflicts", () => {
     });
   });
 
+  it("rejects booking a trip that already departed", async () => {
+    mockTransaction(
+      makeTx({
+        trip: {
+          status: TripStatus.PUBLISHED,
+          availableSeats: 4,
+          driverId: "driver",
+          departureAt: new Date(Date.now() - 1000),
+        },
+      }),
+    );
+    expect(await createBooking("passenger", input)).toEqual({
+      ok: false,
+      reason: "TRIP_DEPARTED",
+    });
+  });
+
   it("rejects booking your own trip", async () => {
     mockTransaction(
       makeTx({
-        trip: { status: TripStatus.PUBLISHED, availableSeats: 4, driverId: "me" },
+        trip: {
+          status: TripStatus.PUBLISHED,
+          availableSeats: 4,
+          driverId: "me",
+          departureAt: future,
+        },
       }),
     );
     expect(await createBooking("me", input)).toEqual({
@@ -70,7 +99,12 @@ describe("createBooking conflicts", () => {
   it("rejects when not enough seats are available", async () => {
     mockTransaction(
       makeTx({
-        trip: { status: TripStatus.PUBLISHED, availableSeats: 1, driverId: "driver" },
+        trip: {
+          status: TripStatus.PUBLISHED,
+          availableSeats: 1,
+          driverId: "driver",
+          departureAt: future,
+        },
       }),
     );
     expect(await createBooking("passenger", input)).toEqual({

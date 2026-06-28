@@ -25,7 +25,9 @@ export function TelegramLogin() {
     try {
       const result = await startTelegramLoginAction();
       if (!result.ok) {
-        setError(t.errors.start);
+        setError(
+          result.reason === "rate_limited" ? t.errors.rateLimited : t.errors.start,
+        );
         return;
       }
       setNonce(result.nonce);

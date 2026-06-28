@@ -11,6 +11,7 @@ import {
   passengerHasCompletedBooking,
 } from "@/server/bookings/queries";
 import { getTripDetail } from "@/server/trips/queries";
+import { autoCompleteDepartedTrips } from "@/server/trips/mutations";
 import { listAuthoredReviewsForTrip } from "@/server/reviews/queries";
 import { TripMap, type LatLng } from "@/components/trip-map";
 import { BookingForm } from "./booking-form";
@@ -32,6 +33,10 @@ export default async function TripPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // No scheduler (Vercel Hobby) — complete this trip lazily if its time has passed,
+  // so reviews unlock when participants open it.
+  await autoCompleteDepartedTrips({ id });
 
   const [trip, session] = await Promise.all([getTripDetail(id), getAuthSession()]);
 
@@ -175,6 +180,14 @@ export default async function TripPage({
                     {c.ownerActionsTitle}
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row">
+                    {trip.status === TripStatus.PUBLISHED ? (
+                      <Link
+                        href={`/trips/${trip.id}/edit`}
+                        className="flex-1 rounded-full border border-line py-2.5 text-center text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
+                      >
+                        {c.edit}
+                      </Link>
+                    ) : null}
                     <form action={repeatTripAction} className="flex-1">
                       <input type="hidden" name="tripId" value={trip.id} />
                       <button

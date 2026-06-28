@@ -5,6 +5,7 @@ import { ruContent } from "@/lib/content/ru";
 import { getAuthSession } from "@/lib/auth";
 import { formatDeparture } from "@/lib/datetime";
 import { listPassengerBookings } from "@/server/bookings/queries";
+import { autoCompleteDepartedTrips } from "@/server/trips/mutations";
 import { CancelBookingButton } from "./cancel-booking-button";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -36,6 +37,9 @@ export default async function MyBookingsPage() {
     redirect("/auth/sign-in?callbackUrl=/my-bookings");
   }
 
+  await autoCompleteDepartedTrips({
+    bookings: { some: { passengerId: session.user.id } },
+  });
   const bookings = await listPassengerBookings(session.user.id);
 
   const active = bookings.filter((b) => ACTIVE_STATUSES.has(b.status));

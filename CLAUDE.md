@@ -15,6 +15,8 @@ npm run dev              # start dev server (Next.js, Turbopack)
 npm run build             # production build
 npm run lint              # ESLint (eslint-config-next core-web-vitals + typescript)
 npx tsc --noEmit           # type-check only (no dedicated package.json script exists for this)
+npm test                  # run Vitest once (alias: vitest run)
+npm run test:watch        # Vitest in watch mode
 
 npm run prisma:generate   # regenerate Prisma client after schema changes
 npm run db:push           # push prisma/schema.prisma to the database (no migrations dir is used)
@@ -26,7 +28,7 @@ npm run docker:down
 npm run docker:logs
 ```
 
-There is no test framework configured yet (no jest/vitest/playwright, no `*.test.*` files, no test script) — don't assume one exists.
+Tests run on **Vitest** (`npm test`). Tests live next to the code as `*.test.ts` (config in [vitest.config.ts](vitest.config.ts), `@` alias → `src`, node environment). The pattern for DB-touching domain logic is to mock the Prisma singleton with `vi.mock("@/lib/db", ...)` (use `vi.hoisted` for the mock object) rather than hitting a real database — see [src/server/telegram/otp.test.ts](src/server/telegram/otp.test.ts) and [src/server/bookings/mutations.test.ts](src/server/bookings/mutations.test.ts). Pure helpers/schemas are tested directly (e.g. [src/lib/datetime.test.ts](src/lib/datetime.test.ts)). No Playwright/e2e layer exists.
 
 Local setup: copy `.env.example` to `.env`, set `DATABASE_URL`/`NEXTAUTH_URL`/`NEXTAUTH_SECRET`, `npm install`, `npm run prisma:generate`, `npm run dev`.
 
@@ -61,13 +63,17 @@ See [src/server/bookings/](src/server/bookings/) for the reference implementatio
 
 ### Auth & onboarding gating
 
-Auth is intentionally minimalist for this stage (see docs/mvp.md "Аутентификация"): `next-auth` Credentials provider keyed only by email (+ optional name), JWT session strategy, no password/magic-link/OAuth yet — that's the production target, not what's implemented. Everything funnels through [src/lib/auth.ts](src/lib/auth.ts):
+Auth uses `next-auth` with a JWT session strategy (90-day `maxAge`) and three providers, all funneling through [src/lib/auth.ts](src/lib/auth.ts): **Google** OAuth (prod), **Telegram OTP** (`telegram-otp` Credentials provider — bot deep-link + 6-digit code, see Telegram section below), and a **dev email** Credentials provider (`devLoginEnabled`, non-production only; seeds a throwaway phone so onboarding is skipped). Each provider is gated on its config (`googleConfigured`/`telegramConfigured`/`devLoginEnabled`). The `jwt` callback resolves every provider onto a single `User` row: email providers find-or-create by email; Telegram returns our `User.id` directly (it's resolved + status-checked inside `verifyTelegramOtp`, identity keyed on `User.telegramUserId`). Key helpers:
 
 - `getAuthSession()` / `getCurrentUser()` — current user with `driverProfile` + first `vehicle` preloaded.
 - `getPostAuthRedirect(user)` — single source of truth for "where does this user land", based on `isUserProfileComplete`.
 - Session/JWT are augmented with `user.id` via the callbacks in `authOptions`; the `id` field is typed on in [src/types/next-auth.d.ts](src/types/next-auth.d.ts).
 
-Profile/driver completeness predicates live in [src/server/users/profile.ts](src/server/users/profile.ts) (`isUserProfileComplete`, `isDriverSetupComplete`) and are re-checked independently on every page (`/`, `/auth/sign-in`, `/dashboard`, `/onboarding/profile`, `/onboarding/driver`) rather than cached — the funnel is sign-in → `/onboarding/profile` (phone + telegramUsername) → `/onboarding/driver` (bio + vehicle) → `/dashboard`, but a returning user with a complete profile is sent straight to `/dashboard` from any entry point. `server/users/profile.ts` also holds the input-normalizers (`normalizePhone`, `normalizeTelegramUsername`, `normalizeVehiclePlate`) used by the domain zod schemas in `src/server/users/schema.ts`.
+Profile/driver completeness predicates live in [src/server/users/profile.ts](src/server/users/profile.ts) (`isUserProfileComplete`, `isDriverSetupComplete`) and are re-checked independently on every page (`/`, `/auth/sign-in`, `/dashboard`, `/onboarding/profile`, `/onboarding/driver`) rather than cached — the funnel is sign-in → `/onboarding/profile` (phone required; telegramUsername optional and auto-filled from Telegram on OTP sign-in) → `/onboarding/driver` (bio + vehicle) → `/dashboard`, but a returning user with a complete profile is sent straight to `/dashboard` from any entry point. **`isUserProfileComplete` requires `phone` only.** `server/users/profile.ts` also holds the input-normalizers (`normalizePhone`, `normalizeTelegramUsername`, `normalizeVehiclePlate`) used by the domain zod schemas in `src/server/users/schema.ts`.
+
+### Telegram integration
+
+The bot ([@CarPoolRegisterBot](https://t.me/CarPoolRegisterBot)) drives both login and notifications. Updates arrive at [src/app/api/telegram/webhook/route.ts](src/app/api/telegram/webhook/route.ts), authenticated by the `x-telegram-bot-api-secret-token` header matching `TELEGRAM_WEBHOOK_SECRET` (register the webhook once via the Bot API `setWebhook`). It dispatches `/start <param>` two ways: a param prefixed `tg_` is an **OTP login** nonce (→ `deliverTelegramOtp` returns a 6-digit code the bot sends back); any other param is a **notification-linking** token (→ `linkTelegramChat` binds `telegramChatId`). Both live in [src/server/telegram/](src/server/telegram/) — `otp.ts` (login flow) and `mutations.ts` (linking). The OTP flow is backed by the `TelegramAuthChallenge` model with a 10-min TTL, a per-challenge attempt cap, a per-account delivery rate-limit, and opportunistic cleanup of expired/consumed rows on each new login. Outbound messages go through `sendTelegramMessage` in [src/lib/notify.ts](src/lib/notify.ts); note the bot can only message a user **after** they've `/start`ed it (that's when `telegramChatId` is captured). Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` (no `@`), `TELEGRAM_WEBHOOK_SECRET`.
 
 ### Server action error pattern
 
@@ -77,7 +83,9 @@ Unique-constraint handling lives in the **mutation** (`src/server/<domain>/mutat
 
 [src/lib/db.ts](src/lib/db.ts) exports a singleton `PrismaClient` cached on `globalThis` in non-production to survive dev hot-reload. Always import `db` from there; never instantiate `PrismaClient` directly.
 
-[prisma/schema.prisma](prisma/schema.prisma) is the full intended domain model (`User`, `DriverProfile`, `Vehicle`, `Trip`, `Booking`, `Review`, `Notification`, `Report`, `AdminNote`). App code currently touches `User`/`DriverProfile`/`Vehicle`/`Trip`/`Booking` (via the `src/server/` domain layer); `Review`/`Notification`/`Report`/`AdminNote` are modeled ahead of the UI that will use them (see docs/mvp.md stage 2/3 roadmap). There's no `prisma/migrations` directory; schema changes are applied with `db:push`, not `migrate`.
+[prisma/schema.prisma](prisma/schema.prisma) is the full domain model (`User`, `DriverProfile`, `Vehicle`, `Trip`, `TripTemplate`, `Booking`, `Review`, `Notification`, `Report`, `AdminNote`, `TelegramAuthChallenge`). All are now used by the `src/server/` domain layer except `AdminNote` (modeled ahead of its UI). There's no `prisma/migrations` directory; schema changes are applied with `db:push`, not `migrate`.
+
+**Production DB is Supabase Postgres.** On Vercel (serverless) `DATABASE_URL` must use the **Transaction pooler** (`...pooler.supabase.com:6543/...?pgbouncer=true&connection_limit=1`), not session mode (`:5432`) — session mode throws `prepared statement "sN" does not exist` under serverless. After editing `schema.prisma` and running `prisma generate`/`db:push`, **restart any running `npm run dev`** — the Prisma client is cached in the process and won't pick up new models otherwise.
 
 ### Styling
 

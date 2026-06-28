@@ -81,15 +81,15 @@ export default async function DashboardPage() {
             >
               {driverSetupComplete ? dashboard.manageDriver : dashboard.setupDriver}
             </Link>
-            {telegramConfigured && (
+            {/* Telegram OTP sign-in already captures telegramChatId, so only users
+                who aren't linked yet (e.g. Google sign-in) need the connect step. */}
+            {telegramConfigured && !telegramLinked && (
               <form action={connectTelegramAction}>
                 <button
                   type="submit"
                   className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
                 >
-                  {telegramLinked
-                    ? dashboard.reconnectTelegram
-                    : dashboard.connectTelegram}
+                  {dashboard.connectTelegram}
                 </button>
               </form>
             )}

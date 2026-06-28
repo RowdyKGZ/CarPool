@@ -5,8 +5,14 @@ import { bishkekDayBounds } from "@/lib/datetime";
 export type TripsDateFilter = "today" | "tomorrow" | "all";
 export type DriverTripsFilter = "upcoming" | "past";
 
-/** Published trips visible in the public listing, filtered by departure day. */
-export function listPublishedTrips(filter: TripsDateFilter) {
+export const TRIPS_PAGE_SIZE = 20;
+
+/** Published trips visible in the public listing, filtered by departure day and
+ * paginated (1-based `page`). `hasMore` signals whether a next page exists. */
+export async function listPublishedTrips(
+  filter: TripsDateFilter,
+  page = 1,
+) {
   const now = new Date();
   const todayBounds = bishkekDayBounds(0);
   const tomorrowBounds = bishkekDayBounds(1);
@@ -18,7 +24,8 @@ export function listPublishedTrips(filter: TripsDateFilter) {
         ? tomorrowBounds
         : { gte: now };
 
-  return db.trip.findMany({
+  const currentPage = Math.max(1, page);
+  const rows = await db.trip.findMany({
     where: { status: TripStatus.PUBLISHED, departureAt },
     select: {
       id: true,
@@ -32,7 +39,16 @@ export function listPublishedTrips(filter: TripsDateFilter) {
       vehicle: { select: { make: true, model: true, color: true } },
     },
     orderBy: { departureAt: "asc" },
+    skip: (currentPage - 1) * TRIPS_PAGE_SIZE,
+    take: TRIPS_PAGE_SIZE + 1,
   });
+
+  const hasMore = rows.length > TRIPS_PAGE_SIZE;
+  return {
+    trips: hasMore ? rows.slice(0, TRIPS_PAGE_SIZE) : rows,
+    page: currentPage,
+    hasMore,
+  };
 }
 
 /** Full trip detail with driver + vehicle for the trip page. */

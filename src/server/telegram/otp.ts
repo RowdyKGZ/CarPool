@@ -12,6 +12,9 @@ const MAX_OTP_ATTEMPTS = 5;
 // A single Telegram account may request at most this many codes per window.
 const OTP_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_OTP_DELIVERIES = 5;
+// One source IP may start at most this many login challenges per window.
+const START_RATE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_STARTS_PER_IP = 5;
 
 /** True if no other user already claims this (globally unique) Telegram username. */
 async function isTelegramUsernameFree(username: string): Promise<boolean> {
@@ -22,13 +25,18 @@ async function isTelegramUsernameFree(username: string): Promise<boolean> {
   return !taken;
 }
 
-export type StartTelegramLoginResult = { nonce: string; deepLink: string };
+export type StartTelegramLoginResult =
+  | { ok: true; nonce: string; deepLink: string }
+  | { ok: false; reason: "unavailable" | "rate_limited" };
 
 /** Creates a fresh challenge and returns the deep link the user opens in Telegram.
- * Returns null if the bot username isn't configured (feature unavailable). */
-export async function startTelegramLogin(): Promise<StartTelegramLoginResult | null> {
+ * `requestIp` (when known) is used to throttle how many challenges one source can
+ * start. Returns `unavailable` if the bot isn't configured. */
+export async function startTelegramLogin(
+  requestIp?: string | null,
+): Promise<StartTelegramLoginResult> {
   const botUsername = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, "");
-  if (!botUsername) return null;
+  if (!botUsername) return { ok: false, reason: "unavailable" };
 
   // Opportunistic cleanup: drop expired and already-consumed challenges so the
   // table doesn't accumulate dead rows (no separate cron needed).
@@ -38,12 +46,29 @@ export async function startTelegramLogin(): Promise<StartTelegramLoginResult | n
     },
   });
 
+  if (requestIp) {
+    const recentStarts = await db.telegramAuthChallenge.count({
+      where: {
+        requestIp,
+        createdAt: { gte: new Date(Date.now() - START_RATE_WINDOW_MS) },
+      },
+    });
+    if (recentStarts >= MAX_STARTS_PER_IP) {
+      return { ok: false, reason: "rate_limited" };
+    }
+  }
+
   const nonce = randomUUID().replace(/-/g, "");
   await db.telegramAuthChallenge.create({
-    data: { nonce, expiresAt: new Date(Date.now() + OTP_TTL_MS) },
+    data: {
+      nonce,
+      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+      requestIp: requestIp ?? null,
+    },
   });
 
   return {
+    ok: true,
     nonce,
     deepLink: `https://t.me/${botUsername}?start=${TELEGRAM_LOGIN_PREFIX}${nonce}`,
   };
