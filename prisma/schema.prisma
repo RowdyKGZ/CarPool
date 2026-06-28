@@ -259,6 +259,8 @@ model TripTemplate {
   id            String   @id @default(cuid())
   driverId      String
   title         String?
+  fromDistrict  String?
+  toDistrict    String?
   pickupLabel   String
   pickupLat     Float?
   pickupLng     Float?

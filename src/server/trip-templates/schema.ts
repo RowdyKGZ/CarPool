@@ -1,10 +1,14 @@
 import { z } from "zod";
+import { BISHKEK_DISTRICTS } from "@/lib/districts";
 
 // Hidden map inputs send "" when no pin is placed — treat that as "not provided".
 function emptyToUndefined(value: FormDataEntryValue | null): string | undefined {
   const str = typeof value === "string" ? value.trim() : "";
   return str.length > 0 ? str : undefined;
 }
+
+// District selects send "" for "any" — coerce unknown/empty to undefined.
+const optionalDistrict = z.enum(BISHKEK_DISTRICTS).optional().catch(undefined);
 
 const optionalLatitude = z.coerce
   .number()
@@ -18,6 +22,8 @@ const optionalLongitude = z.coerce
   .optional();
 
 export const tripTemplateCreateSchema = z.object({
+  fromDistrict: optionalDistrict,
+  toDistrict: optionalDistrict,
   title: z
     .string()
     .trim()
@@ -65,6 +71,8 @@ export type TripTemplateCreateInput = z.infer<typeof tripTemplateCreateSchema>;
 /** Pulls the raw template fields out of a submitted FormData. */
 export function readTripTemplateForm(formData: FormData) {
   return {
+    fromDistrict: emptyToUndefined(formData.get("fromDistrict")),
+    toDistrict: emptyToUndefined(formData.get("toDistrict")),
     title: String(formData.get("title") ?? ""),
     pickupLabel: String(formData.get("pickupLabel") ?? ""),
     dropoffLabel: String(formData.get("dropoffLabel") ?? ""),

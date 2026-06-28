@@ -19,6 +19,8 @@ export const initialTripTemplateFormState: TripTemplateFormState = {
 
 export type TripTemplateFormDefaults = {
   title?: string;
+  fromDistrict?: string;
+  toDistrict?: string;
   pickupLabel?: string;
   dropoffLabel?: string;
   pickupLat?: number | null;

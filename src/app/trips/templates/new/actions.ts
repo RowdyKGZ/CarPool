@@ -42,7 +42,14 @@ export async function createTripTemplate(
     };
   }
 
-  await createTemplate(session.user.id, parsed.data);
+  const result = await createTemplate(session.user.id, parsed.data);
+
+  if (!result.ok && result.reason === "DUPLICATE") {
+    return {
+      message: ruContent.tripTemplateNew.duplicateError,
+      fieldErrors: {},
+    };
+  }
 
   redirect("/trips/templates");
 }

@@ -3,6 +3,7 @@
 import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
+import { BISHKEK_DISTRICTS } from "@/lib/districts";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
 import {
   initialTripTemplateFormState,
@@ -72,6 +73,52 @@ export function TripTemplateForm({
       {templateId ? (
         <input type="hidden" name="templateId" value={templateId} />
       ) : null}
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="fromDistrict"
+          >
+            {ruContent.tripNew.fromDistrictLabel}
+          </label>
+          <select
+            id="fromDistrict"
+            name="fromDistrict"
+            defaultValue={defaultValues?.fromDistrict ?? ""}
+            className={inputClass}
+          >
+            <option value="">{ruContent.tripNew.selectPlaceholder}</option>
+            {BISHKEK_DISTRICTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="toDistrict"
+          >
+            {ruContent.tripNew.toDistrictLabel}
+          </label>
+          <select
+            id="toDistrict"
+            name="toDistrict"
+            defaultValue={defaultValues?.toDistrict ?? ""}
+            className={inputClass}
+          >
+            <option value="">{ruContent.tripNew.selectPlaceholder}</option>
+            {BISHKEK_DISTRICTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">{cm.heading}</p>

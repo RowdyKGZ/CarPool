@@ -5,6 +5,7 @@ import { ruContent } from "@/lib/content/ru";
 import { formatDeparture } from "@/lib/datetime";
 import { listDriverActiveTrips } from "@/server/trips/queries";
 import { listDriverTemplates } from "@/server/trip-templates/queries";
+import { SubmitButton } from "@/components/submit-button";
 import {
   createFromTripAction,
   deleteTemplateAction,
@@ -78,12 +79,9 @@ export default async function TripTemplatesPage() {
                   </option>
                 ))}
               </select>
-              <button
-                type="submit"
-                className="shrink-0 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
-              >
+              <SubmitButton className="shrink-0 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:opacity-70">
                 {c.fromTripButton}
-              </button>
+              </SubmitButton>
             </div>
           </form>
         ) : null}
@@ -142,21 +140,15 @@ export default async function TripTemplatesPage() {
                     </Link>
                     <form action={reverseTemplateAction}>
                       <input type="hidden" name="templateId" value={template.id} />
-                      <button
-                        type="submit"
-                        className="rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent"
-                      >
+                      <SubmitButton className="rounded-full border border-line px-4 py-2 text-sm font-medium text-foreground transition hover:border-accent hover:text-accent disabled:opacity-70">
                         ⇄ {c.reverse}
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={deleteTemplateAction} className="ml-auto">
                       <input type="hidden" name="templateId" value={template.id} />
-                      <button
-                        type="submit"
-                        className="rounded-full px-4 py-2 text-sm font-medium text-muted transition hover:text-[rgb(185,28,28)]"
-                      >
+                      <SubmitButton className="rounded-full px-4 py-2 text-sm font-medium text-muted transition hover:text-[rgb(185,28,28)] disabled:opacity-70">
                         {c.delete}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </article>

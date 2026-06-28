@@ -1,6 +1,7 @@
 import { UserRole, UserStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
 import { listUsersForAdmin } from "@/server/admin/queries";
+import { Pagination } from "@/components/pagination";
 import { setUserStatusAction } from "../actions";
 
 const STATUS_LABEL: Record<UserStatus, string> = {
@@ -44,8 +45,14 @@ function StatusButton({
   );
 }
 
-export default async function AdminUsersPage() {
-  const users = await listUsersForAdmin();
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+  const { items: users, page, hasMore } = await listUsersForAdmin(requestedPage);
   const a = ruContent.admin;
 
   if (users.length === 0) {
@@ -53,6 +60,7 @@ export default async function AdminUsersPage() {
   }
 
   return (
+    <>
     <ul className="space-y-3">
       {users.map((u) => {
         const isAdmin = u.role === UserRole.ADMIN;
@@ -117,5 +125,7 @@ export default async function AdminUsersPage() {
         );
       })}
     </ul>
+    <Pagination page={page} hasMore={hasMore} basePath="/admin/users" />
+    </>
   );
 }

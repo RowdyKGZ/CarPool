@@ -21,31 +21,54 @@ export function passengerHasCompletedBooking(tripId: string, passengerId: string
     .then(Boolean);
 }
 
-/** All bookings made by a passenger, newest first (for /my-bookings). */
-export function listPassengerBookings(passengerId: string) {
-  return db.booking.findMany({
-    where: { passengerId },
+export const BOOKINGS_PAGE_SIZE = 20;
+
+const passengerBookingSelect = {
+  id: true,
+  status: true,
+  seatsRequested: true,
+  note: true,
+  createdAt: true,
+  trip: {
     select: {
       id: true,
-      status: true,
-      seatsRequested: true,
-      note: true,
-      createdAt: true,
-      trip: {
-        select: {
-          id: true,
-          pickupLabel: true,
-          dropoffLabel: true,
-          departureAt: true,
-          pricePerSeat: true,
-          driver: {
-            select: { name: true, phone: true, telegramUsername: true },
-          },
-        },
+      pickupLabel: true,
+      dropoffLabel: true,
+      departureAt: true,
+      pricePerSeat: true,
+      driver: {
+        select: { name: true, phone: true, telegramUsername: true },
       },
     },
+  },
+} as const;
+
+/** A passenger's active (pending/confirmed) bookings — few, shown in full. */
+export function listActivePassengerBookings(passengerId: string) {
+  return db.booking.findMany({
+    where: { passengerId, status: { in: ACTIVE_BOOKING_STATUSES } },
+    select: passengerBookingSelect,
     orderBy: { createdAt: "desc" },
   });
+}
+
+/** A passenger's finished bookings (history), paginated newest-first. */
+export async function listPastPassengerBookings(passengerId: string, page = 1) {
+  const currentPage = Math.max(1, page);
+  const rows = await db.booking.findMany({
+    where: { passengerId, status: { notIn: ACTIVE_BOOKING_STATUSES } },
+    select: passengerBookingSelect,
+    orderBy: { createdAt: "desc" },
+    skip: (currentPage - 1) * BOOKINGS_PAGE_SIZE,
+    take: BOOKINGS_PAGE_SIZE + 1,
+  });
+
+  const hasMore = rows.length > BOOKINGS_PAGE_SIZE;
+  return {
+    bookings: hasMore ? rows.slice(0, BOOKINGS_PAGE_SIZE) : rows,
+    page: currentPage,
+    hasMore,
+  };
 }
 
 /** All bookings on a trip, for the driver's moderation view. */

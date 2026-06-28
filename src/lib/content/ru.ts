@@ -437,6 +437,8 @@ export const ruContent = {
     submit: "Сохранить шаблон",
     pending: "Сохраняем...",
     genericError: "Проверь данные шаблона и попробуй снова.",
+    duplicateError:
+      "Похожий шаблон уже есть — с тем же маршрутом и временем. Открой список шаблонов.",
   },
   tripTemplateEdit: {
     eyebrow: "Редактирование шаблона",
@@ -480,5 +482,20 @@ export const ruContent = {
   },
   common: {
     authRequired: "Сначала войди в аккаунт.",
+    loading: "Загрузка...",
+  },
+  pagination: {
+    prev: "Назад",
+    next: "Дальше",
+  },
+  errorPages: {
+    notFoundTitle: "Страница не найдена",
+    notFoundDescription:
+      "Похоже, такой страницы нет или она была удалена. Проверь ссылку или вернись на главную.",
+    home: "На главную",
+    errorTitle: "Что-то пошло не так",
+    errorDescription:
+      "Произошла ошибка. Попробуй обновить страницу — если не поможет, вернись позже.",
+    retry: "Попробовать снова",
   },
 } as const;

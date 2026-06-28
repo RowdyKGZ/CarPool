@@ -6,6 +6,7 @@ export type TripsDateFilter = "today" | "tomorrow" | "all";
 export type DriverTripsFilter = "upcoming" | "past";
 
 export const TRIPS_PAGE_SIZE = 20;
+export const DRIVER_TRIPS_PAGE_SIZE = 20;
 
 /** Published trips visible in the public listing, filtered by departure day and
  * optional from/to district, paginated (1-based `page`). `hasMore` signals
@@ -98,9 +99,14 @@ export function listDriverActiveTrips(driverId: string) {
   });
 }
 
-export function listDriverTrips(driverId: string, filter: DriverTripsFilter) {
+export async function listDriverTrips(
+  driverId: string,
+  filter: DriverTripsFilter,
+  page = 1,
+) {
   const now = new Date();
-  return db.trip.findMany({
+  const currentPage = Math.max(1, page);
+  const rows = await db.trip.findMany({
     where: {
       driverId,
       departureAt: filter === "upcoming" ? { gte: now } : { lt: now },
@@ -119,5 +125,14 @@ export function listDriverTrips(driverId: string, filter: DriverTripsFilter) {
       },
     },
     orderBy: { departureAt: filter === "upcoming" ? "asc" : "desc" },
+    skip: (currentPage - 1) * DRIVER_TRIPS_PAGE_SIZE,
+    take: DRIVER_TRIPS_PAGE_SIZE + 1,
   });
+
+  const hasMore = rows.length > DRIVER_TRIPS_PAGE_SIZE;
+  return {
+    trips: hasMore ? rows.slice(0, DRIVER_TRIPS_PAGE_SIZE) : rows,
+    page: currentPage,
+    hasMore,
+  };
 }

@@ -3,6 +3,7 @@ import { ReportStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
 import { formatDeparture } from "@/lib/datetime";
 import { listReportsForAdmin } from "@/server/admin/queries";
+import { Pagination } from "@/components/pagination";
 import { setReportStatusAction } from "../actions";
 
 const STATUS_LABEL: Record<ReportStatus, string> = {
@@ -42,8 +43,18 @@ function StatusButton({
   );
 }
 
-export default async function AdminReportsPage() {
-  const reports = await listReportsForAdmin();
+export default async function AdminReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+  const {
+    items: reports,
+    page,
+    hasMore,
+  } = await listReportsForAdmin(requestedPage);
   const a = ruContent.admin;
 
   if (reports.length === 0) {
@@ -51,6 +62,7 @@ export default async function AdminReportsPage() {
   }
 
   return (
+    <>
     <ul className="space-y-3">
       {reports.map((r) => (
         <li key={r.id} className="rounded-3xl border border-line bg-surface p-5">
@@ -99,5 +111,7 @@ export default async function AdminReportsPage() {
         </li>
       ))}
     </ul>
+    <Pagination page={page} hasMore={hasMore} basePath="/admin/reports" />
+    </>
   );
 }

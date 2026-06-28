@@ -1,6 +1,18 @@
 import { ReportStatus, TripStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 
+export const ADMIN_PAGE_SIZE = 50;
+
+/** Slices off the extra +1 row used to detect a next page. */
+function paginate<T>(rows: T[], page: number) {
+  const hasMore = rows.length > ADMIN_PAGE_SIZE;
+  return {
+    items: hasMore ? rows.slice(0, ADMIN_PAGE_SIZE) : rows,
+    page,
+    hasMore,
+  };
+}
+
 export async function getAdminOverview() {
   const [users, publishedTrips, openReports] = await Promise.all([
     db.user.count(),
@@ -10,10 +22,12 @@ export async function getAdminOverview() {
   return { users, publishedTrips, openReports };
 }
 
-export function listUsersForAdmin() {
-  return db.user.findMany({
+export async function listUsersForAdmin(page = 1) {
+  const currentPage = Math.max(1, page);
+  const rows = await db.user.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100,
+    skip: (currentPage - 1) * ADMIN_PAGE_SIZE,
+    take: ADMIN_PAGE_SIZE + 1,
     select: {
       id: true,
       name: true,
@@ -25,12 +39,15 @@ export function listUsersForAdmin() {
       _count: { select: { tripsDriven: true, bookings: true } },
     },
   });
+  return paginate(rows, currentPage);
 }
 
-export function listTripsForAdmin() {
-  return db.trip.findMany({
+export async function listTripsForAdmin(page = 1) {
+  const currentPage = Math.max(1, page);
+  const rows = await db.trip.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100,
+    skip: (currentPage - 1) * ADMIN_PAGE_SIZE,
+    take: ADMIN_PAGE_SIZE + 1,
     select: {
       id: true,
       pickupLabel: true,
@@ -42,12 +59,15 @@ export function listTripsForAdmin() {
       driver: { select: { name: true } },
     },
   });
+  return paginate(rows, currentPage);
 }
 
-export function listReportsForAdmin() {
-  return db.report.findMany({
+export async function listReportsForAdmin(page = 1) {
+  const currentPage = Math.max(1, page);
+  const rows = await db.report.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100,
+    skip: (currentPage - 1) * ADMIN_PAGE_SIZE,
+    take: ADMIN_PAGE_SIZE + 1,
     select: {
       id: true,
       reason: true,
@@ -59,4 +79,5 @@ export function listReportsForAdmin() {
       targetUser: { select: { name: true } },
     },
   });
+  return paginate(rows, currentPage);
 }

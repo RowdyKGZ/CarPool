@@ -47,6 +47,8 @@ export default async function TripTemplateEditPage({
               templateId={template.id}
               defaultValues={{
                 title: template.title ?? undefined,
+                fromDistrict: template.fromDistrict ?? undefined,
+                toDistrict: template.toDistrict ?? undefined,
                 pickupLabel: template.pickupLabel,
                 dropoffLabel: template.dropoffLabel,
                 pickupLat: template.pickupLat,

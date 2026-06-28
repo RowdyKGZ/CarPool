@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ruContent } from "@/lib/content/ru";
 import { isDriverSetupComplete, isUserProfileComplete } from "@/server/users/profile";
+import { SubmitButton } from "@/components/submit-button";
 import { connectTelegramAction } from "./actions";
 
 export default async function DashboardPage() {
@@ -85,12 +86,9 @@ export default async function DashboardPage() {
                 who aren't linked yet (e.g. Google sign-in) need the connect step. */}
             {telegramConfigured && !telegramLinked && (
               <form action={connectTelegramAction}>
-                <button
-                  type="submit"
-                  className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
-                >
+                <SubmitButton className="rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white disabled:opacity-70">
                   {dashboard.connectTelegram}
-                </button>
+                </SubmitButton>
               </form>
             )}
           </div>

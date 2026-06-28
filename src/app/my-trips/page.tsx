@@ -9,6 +9,7 @@ import {
   type DriverTripsFilter,
 } from "@/server/trips/queries";
 import { autoCompleteDepartedTrips } from "@/server/trips/mutations";
+import { Pagination } from "@/components/pagination";
 
 const TRIP_STATUS_LABEL: Record<TripStatus, string> = {
   PUBLISHED: ruContent.myTrips.statusPublished,
@@ -25,18 +26,23 @@ const TRIP_STATUS_STYLE: Record<TripStatus, string> = {
 export default async function MyTripsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; page?: string }>;
 }) {
   const session = await getAuthSession();
   if (!session?.user?.id) {
     redirect("/auth/sign-in?callbackUrl=/my-trips");
   }
 
-  const { view } = await searchParams;
+  const { view, page: pageParam } = await searchParams;
   const filter: DriverTripsFilter = view === "past" ? "past" : "upcoming";
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
 
   await autoCompleteDepartedTrips({ driverId: session.user.id });
-  const trips = await listDriverTrips(session.user.id, filter);
+  const { trips, page, hasMore } = await listDriverTrips(
+    session.user.id,
+    filter,
+    requestedPage,
+  );
 
   const c = ruContent.myTrips;
 
@@ -150,6 +156,13 @@ export default async function MyTripsPage({
             ))}
           </ul>
         )}
+
+        <Pagination
+          page={page}
+          hasMore={hasMore}
+          basePath="/my-trips"
+          params={{ view }}
+        />
       </div>
     </main>
   );

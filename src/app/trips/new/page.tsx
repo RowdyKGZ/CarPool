@@ -37,6 +37,8 @@ export default async function TripNewPage({
     const template = await getTemplateForDriver(user.id, templateId);
     if (template) {
       defaultValues = {
+        fromDistrict: template.fromDistrict ?? undefined,
+        toDistrict: template.toDistrict ?? undefined,
         pickupLabel: template.pickupLabel,
         dropoffLabel: template.dropoffLabel,
         pickupCoords:

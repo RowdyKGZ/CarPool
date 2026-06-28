@@ -3,6 +3,7 @@ import { TripStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
 import { formatDeparture } from "@/lib/datetime";
 import { listTripsForAdmin } from "@/server/admin/queries";
+import { Pagination } from "@/components/pagination";
 import { hideTripAction } from "../actions";
 
 const STATUS_LABEL: Record<TripStatus, string> = {
@@ -17,8 +18,14 @@ const STATUS_STYLE: Record<TripStatus, string> = {
   COMPLETED: "bg-[rgba(99,102,241,0.12)] text-[rgb(67,56,202)]",
 };
 
-export default async function AdminTripsPage() {
-  const trips = await listTripsForAdmin();
+export default async function AdminTripsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+  const { items: trips, page, hasMore } = await listTripsForAdmin(requestedPage);
   const a = ruContent.admin;
 
   if (trips.length === 0) {
@@ -26,6 +33,7 @@ export default async function AdminTripsPage() {
   }
 
   return (
+    <>
     <ul className="space-y-3">
       {trips.map((trip) => (
         <li key={trip.id} className="rounded-3xl border border-line bg-surface p-5">
@@ -72,5 +80,7 @@ export default async function AdminTripsPage() {
         </li>
       ))}
     </ul>
+    <Pagination page={page} hasMore={hasMore} basePath="/admin/trips" />
+    </>
   );
 }

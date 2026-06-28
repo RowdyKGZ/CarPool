@@ -4,8 +4,12 @@ import { BookingStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
 import { getAuthSession } from "@/lib/auth";
 import { formatDeparture } from "@/lib/datetime";
-import { listPassengerBookings } from "@/server/bookings/queries";
+import {
+  listActivePassengerBookings,
+  listPastPassengerBookings,
+} from "@/server/bookings/queries";
 import { autoCompleteDepartedTrips } from "@/server/trips/mutations";
+import { Pagination } from "@/components/pagination";
 import { CancelBookingButton } from "./cancel-booking-button";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -26,24 +30,28 @@ const STATUS_STYLE: Record<BookingStatus, string> = {
   NO_SHOW: "bg-[rgba(239,68,68,0.12)] text-[rgb(185,28,28)]",
 };
 
-const ACTIVE_STATUSES = new Set<BookingStatus>([
-  BookingStatus.PENDING,
-  BookingStatus.CONFIRMED,
-]);
-
-export default async function MyBookingsPage() {
+export default async function MyBookingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await getAuthSession();
   if (!session?.user?.id) {
     redirect("/auth/sign-in?callbackUrl=/my-bookings");
   }
 
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+
   await autoCompleteDepartedTrips({
     bookings: { some: { passengerId: session.user.id } },
   });
-  const bookings = await listPassengerBookings(session.user.id);
-
-  const active = bookings.filter((b) => ACTIVE_STATUSES.has(b.status));
-  const past = bookings.filter((b) => !ACTIVE_STATUSES.has(b.status));
+  const [active, pastResult] = await Promise.all([
+    listActivePassengerBookings(session.user.id),
+    listPastPassengerBookings(session.user.id, requestedPage),
+  ]);
+  const { bookings: past, page, hasMore } = pastResult;
+  const isEmpty = active.length === 0 && past.length === 0;
   const c = ruContent.myBookings;
 
   return (
@@ -68,7 +76,7 @@ export default async function MyBookingsPage() {
           <p className="mt-2 text-base text-muted">{c.description}</p>
         </div>
 
-        {bookings.length === 0 ? (
+        {isEmpty ? (
           <div className="rounded-3xl border border-line bg-surface p-10 text-center">
             <p className="text-muted">{c.empty}</p>
             <Link
@@ -103,6 +111,7 @@ export default async function MyBookingsPage() {
                     <BookingCard key={b.id} booking={b} />
                   ))}
                 </ul>
+                <Pagination page={page} hasMore={hasMore} basePath="/my-bookings" />
               </section>
             )}
           </div>

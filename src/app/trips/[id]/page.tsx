@@ -19,6 +19,7 @@ import { DriverBookings, type DriverBooking } from "./driver-bookings";
 import { ReportForm } from "./report-form";
 import { ReviewsSection } from "./reviews-section";
 import { TripControls } from "./trip-controls";
+import { SubmitButton } from "@/components/submit-button";
 import { repeatTripAction, saveTripAsTemplateAction } from "./trip-actions";
 
 const TRIP_STATUS_STYLE: Record<TripStatus, string> = {
@@ -190,21 +191,15 @@ export default async function TripPage({
                     ) : null}
                     <form action={repeatTripAction} className="flex-1">
                       <input type="hidden" name="tripId" value={trip.id} />
-                      <button
-                        type="submit"
-                        className="w-full rounded-full bg-accent py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
-                      >
+                      <SubmitButton className="w-full rounded-full bg-accent py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:opacity-70">
                         {c.repeat}
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={saveTripAsTemplateAction} className="flex-1">
                       <input type="hidden" name="tripId" value={trip.id} />
-                      <button
-                        type="submit"
-                        className="w-full rounded-full border border-line py-2.5 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
-                      >
+                      <SubmitButton className="w-full rounded-full border border-line py-2.5 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent disabled:opacity-70">
                         {c.saveAsTemplate}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </div>
