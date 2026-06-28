@@ -70,7 +70,7 @@ export default async function DashboardPage() {
               </>
             ) : null}
             <Link
-              href="/onboarding/profile"
+              href="/profile/edit"
               className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent"
             >
               {dashboard.editProfile}

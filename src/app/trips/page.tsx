@@ -2,33 +2,50 @@ import Link from "next/link";
 import { ruContent } from "@/lib/content/ru";
 import { formatDeparture } from "@/lib/datetime";
 import { listPublishedTrips, type TripsDateFilter } from "@/server/trips/queries";
+import { DistrictFilter } from "./district-filter";
 
 export default async function TripsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; page?: string }>;
+  searchParams: Promise<{ date?: string; from?: string; to?: string; page?: string }>;
 }) {
-  const { date, page: pageParam } = await searchParams;
+  const { date, from, to, page: pageParam } = await searchParams;
   const filter: TripsDateFilter =
     date === "tomorrow" ? "tomorrow" : date === "all" ? "all" : "today";
   const requestedPage = Math.max(1, Number(pageParam) || 1);
 
-  const { trips, page, hasMore } = await listPublishedTrips(filter, requestedPage);
+  const { trips, page, hasMore } = await listPublishedTrips(filter, {
+    from: from ?? null,
+    to: to ?? null,
+    page: requestedPage,
+  });
 
   const c = ruContent.tripsList;
+
+  // Keeps the active district filter when switching the date tab.
+  const tabHref = (value: TripsDateFilter) => {
+    const params = new URLSearchParams();
+    if (value !== "today") params.set("date", value);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return qs ? `/trips?${qs}` : "/trips";
+  };
 
   const pageHref = (p: number) => {
     const params = new URLSearchParams();
     if (date) params.set("date", date);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
     if (p > 1) params.set("page", String(p));
     const qs = params.toString();
     return qs ? `/trips?${qs}` : "/trips";
   };
 
   const tabs: { label: string; value: TripsDateFilter; href: string }[] = [
-    { label: c.filterToday, value: "today", href: "/trips" },
-    { label: c.filterTomorrow, value: "tomorrow", href: "/trips?date=tomorrow" },
-    { label: c.filterAll, value: "all", href: "/trips?date=all" },
+    { label: c.filterToday, value: "today", href: tabHref("today") },
+    { label: c.filterTomorrow, value: "tomorrow", href: tabHref("tomorrow") },
+    { label: c.filterAll, value: "all", href: tabHref("all") },
   ];
 
   return (
@@ -59,6 +76,8 @@ export default async function TripsPage({
             </Link>
           ))}
         </div>
+
+        <DistrictFilter from={from ?? ""} to={to ?? ""} />
 
         {trips.length === 0 ? (
           <div className="rounded-3xl border border-line bg-surface p-10 text-center">

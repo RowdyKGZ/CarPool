@@ -8,11 +8,13 @@ export type DriverTripsFilter = "upcoming" | "past";
 export const TRIPS_PAGE_SIZE = 20;
 
 /** Published trips visible in the public listing, filtered by departure day and
- * paginated (1-based `page`). `hasMore` signals whether a next page exists. */
+ * optional from/to district, paginated (1-based `page`). `hasMore` signals
+ * whether a next page exists. */
 export async function listPublishedTrips(
   filter: TripsDateFilter,
-  page = 1,
+  params: { from?: string | null; to?: string | null; page?: number } = {},
 ) {
+  const { from, to, page = 1 } = params;
   const now = new Date();
   const todayBounds = bishkekDayBounds(0);
   const tomorrowBounds = bishkekDayBounds(1);
@@ -26,7 +28,12 @@ export async function listPublishedTrips(
 
   const currentPage = Math.max(1, page);
   const rows = await db.trip.findMany({
-    where: { status: TripStatus.PUBLISHED, departureAt },
+    where: {
+      status: TripStatus.PUBLISHED,
+      departureAt,
+      fromDistrict: from || undefined,
+      toDistrict: to || undefined,
+    },
     select: {
       id: true,
       pickupLabel: true,

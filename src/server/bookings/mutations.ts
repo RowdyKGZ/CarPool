@@ -22,7 +22,10 @@ export type CreateBookingResult =
 
 export type ModerateBookingResult =
   | { ok: true; tripId: string }
-  | { ok: false; reason: "NOT_FOUND" | "FORBIDDEN" | "ALREADY_HANDLED" };
+  | {
+      ok: false;
+      reason: "NOT_FOUND" | "FORBIDDEN" | "ALREADY_HANDLED" | "INVALID_STATE";
+    };
 
 export type CancelBookingResult =
   | { ok: true; tripId: string }
@@ -129,6 +132,50 @@ export async function confirmBooking(
   });
 
   return { ok: true, tripId: booking.trip.id };
+}
+
+/**
+ * Driver flips a finished booking between COMPLETED and NO_SHOW. Only valid on a
+ * completed trip's bookings; seats are untouched (the trip is over). Used by both
+ * `markBookingNoShow` and its undo `markBookingAttended`.
+ */
+async function setBookingAttendance(
+  driverId: string,
+  bookingId: string,
+  from: BookingStatus,
+  to: BookingStatus,
+): Promise<ModerateBookingResult> {
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    select: { status: true, trip: { select: { id: true, driverId: true } } },
+  });
+
+  if (!booking) return { ok: false, reason: "NOT_FOUND" };
+  if (booking.trip.driverId !== driverId) return { ok: false, reason: "FORBIDDEN" };
+  if (booking.status !== from) return { ok: false, reason: "INVALID_STATE" };
+
+  await db.booking.update({ where: { id: bookingId }, data: { status: to } });
+  return { ok: true, tripId: booking.trip.id };
+}
+
+/** Driver marks a passenger who didn't show up (COMPLETED → NO_SHOW). */
+export function markBookingNoShow(driverId: string, bookingId: string) {
+  return setBookingAttendance(
+    driverId,
+    bookingId,
+    BookingStatus.COMPLETED,
+    BookingStatus.NO_SHOW,
+  );
+}
+
+/** Driver reverts a no-show mark (NO_SHOW → COMPLETED). */
+export function markBookingAttended(driverId: string, bookingId: string) {
+  return setBookingAttendance(
+    driverId,
+    bookingId,
+    BookingStatus.NO_SHOW,
+    BookingStatus.COMPLETED,
+  );
 }
 
 /** Passenger cancels their own active booking and returns its seats to the trip. */

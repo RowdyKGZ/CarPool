@@ -6,7 +6,11 @@ import {
   parseBishkekDatetime,
 } from "@/lib/datetime";
 import { ACTIVE_BOOKING_STATUSES } from "@/server/bookings/schema";
-import { notifyTripCancelled } from "@/server/notifications/events";
+import {
+  notifyReviewRequest,
+  notifyTripCancelled,
+  notifyTripUpdated,
+} from "@/server/notifications/events";
 import type { TripCreateInput } from "./schema";
 
 export type TripActionResult =
@@ -42,6 +46,8 @@ export function createTrip(args: {
     data: {
       driverId,
       vehicleId,
+      fromDistrict: data.fromDistrict ?? null,
+      toDistrict: data.toDistrict ?? null,
       pickupLabel: data.pickupLabel,
       pickupLat: data.pickupLat ?? null,
       pickupLng: data.pickupLng ?? null,
@@ -92,6 +98,8 @@ export async function autoCompleteDepartedTrips(
         data: { tripsCompleted: { increment: 1 } },
       }),
     ]);
+
+    await notifyReviewRequest({ tripId: trip.id });
   }
 
   return departed.length;
@@ -184,6 +192,17 @@ export async function updateTrip(args: {
     return { ok: false, reason: guard.reason };
   }
 
+  // Snapshot the fields passengers care about, to decide whether to notify.
+  const existing = await db.trip.findUnique({
+    where: { id: tripId },
+    select: {
+      pickupLabel: true,
+      dropoffLabel: true,
+      departureAt: true,
+      pricePerSeat: true,
+    },
+  });
+
   const active = await db.booking.aggregate({
     where: { tripId, status: { in: ACTIVE_BOOKING_STATUSES } },
     _sum: { seatsRequested: true },
@@ -197,6 +216,8 @@ export async function updateTrip(args: {
   await db.trip.update({
     where: { id: tripId },
     data: {
+      fromDistrict: data.fromDistrict ?? null,
+      toDistrict: data.toDistrict ?? null,
       pickupLabel: data.pickupLabel,
       pickupLat: data.pickupLat ?? null,
       pickupLng: data.pickupLng ?? null,
@@ -210,6 +231,26 @@ export async function updateTrip(args: {
       comment: data.comment,
     },
   });
+
+  // Notify passengers only when something they care about actually changed
+  // (route, departure time, or price) — not on seat/comment-only tweaks.
+  const meaningfulChange =
+    !existing ||
+    existing.pickupLabel !== data.pickupLabel ||
+    existing.dropoffLabel !== data.dropoffLabel ||
+    existing.departureAt.getTime() !== departureAt.getTime() ||
+    existing.pricePerSeat !== data.pricePerSeat;
+
+  if (meaningfulChange) {
+    const affected = await db.booking.findMany({
+      where: { tripId, status: { in: ACTIVE_BOOKING_STATUSES } },
+      select: { passengerId: true },
+    });
+    await notifyTripUpdated({
+      tripId,
+      passengerIds: affected.map((b) => b.passengerId),
+    });
+  }
 
   return { ok: true };
 }
@@ -278,6 +319,8 @@ export async function completeTrip(
       data: { tripsCompleted: { increment: 1 } },
     }),
   ]);
+
+  await notifyReviewRequest({ tripId });
 
   return { ok: true };
 }

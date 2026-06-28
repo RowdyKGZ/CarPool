@@ -55,6 +55,8 @@ export default async function TripEditPage({
               submitLabel={c.submit}
               pendingLabel={c.pending}
               defaultValues={{
+                fromDistrict: trip.fromDistrict ?? undefined,
+                toDistrict: trip.toDistrict ?? undefined,
                 pickupLabel: trip.pickupLabel,
                 dropoffLabel: trip.dropoffLabel,
                 pickupCoords:

@@ -140,6 +140,84 @@ export async function notifyTripReminder(params: {
   }
 }
 
+/**
+ * A trip just completed → nudge the driver and everyone who rode it to leave a
+ * review. Skips trips nobody actually rode (no COMPLETED bookings).
+ */
+export async function notifyReviewRequest(params: {
+  tripId: string;
+}): Promise<void> {
+  try {
+    const trip = await db.trip.findUnique({
+      where: { id: params.tripId },
+      select: { driverId: true, pickupLabel: true, dropoffLabel: true },
+    });
+    if (!trip) return;
+
+    const completed = await db.booking.findMany({
+      where: { tripId: params.tripId, status: BookingStatus.COMPLETED },
+      select: { passengerId: true },
+    });
+    if (completed.length === 0) return;
+
+    const route = `${trip.pickupLabel} → ${trip.dropoffLabel}`;
+    const driverMsg = n.reviewRequestDriver({ route });
+    const passengerMsg = n.reviewRequestPassenger({ route });
+
+    await Promise.all([
+      createNotification({
+        userId: trip.driverId,
+        type: NotificationType.REVIEW_REQUEST,
+        title: driverMsg.title,
+        body: driverMsg.body,
+        metadata: { tripId: params.tripId },
+      }),
+      ...completed.map((b) =>
+        createNotification({
+          userId: b.passengerId,
+          type: NotificationType.REVIEW_REQUEST,
+          title: passengerMsg.title,
+          body: passengerMsg.body,
+          metadata: { tripId: params.tripId },
+        }),
+      ),
+    ]);
+  } catch {
+    // never break trip completion
+  }
+}
+
+/** Driver edited a published trip's details → notify every affected passenger. */
+export async function notifyTripUpdated(params: {
+  tripId: string;
+  passengerIds: string[];
+}): Promise<void> {
+  if (params.passengerIds.length === 0) return;
+  try {
+    const trip = await db.trip.findUnique({
+      where: { id: params.tripId },
+      select: { pickupLabel: true, dropoffLabel: true, departureAt: true },
+    });
+    if (!trip) return;
+
+    const route = `${trip.pickupLabel} → ${trip.dropoffLabel}`;
+    const m = n.tripUpdated({ route, time: formatDeparture(trip.departureAt) });
+    await Promise.all(
+      params.passengerIds.map((passengerId) =>
+        createNotification({
+          userId: passengerId,
+          type: NotificationType.TRIP_UPDATED,
+          title: m.title,
+          body: m.body,
+          metadata: { tripId: params.tripId },
+        }),
+      ),
+    );
+  } catch {
+    // never break the edit flow
+  }
+}
+
 /** Driver cancelled the trip → notify every affected passenger. */
 export async function notifyTripCancelled(params: {
   tripId: string;

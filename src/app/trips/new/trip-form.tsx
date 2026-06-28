@@ -3,11 +3,14 @@
 import { useActionState, useCallback, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ruContent } from "@/lib/content/ru";
+import { BISHKEK_DISTRICTS } from "@/lib/districts";
 import { TripMap, type LatLng, type PinKind } from "@/components/trip-map";
 import { createTrip } from "./actions";
 import { initialTripNewState, type TripNewState } from "./state";
 
 export type TripFormDefaults = {
+  fromDistrict?: string;
+  toDistrict?: string;
   pickupLabel?: string;
   dropoffLabel?: string;
   pickupCoords?: LatLng | null;
@@ -73,6 +76,53 @@ export function TripNewForm({
   return (
     <form action={formAction} className="space-y-5">
       {tripId ? <input type="hidden" name="tripId" value={tripId} /> : null}
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="fromDistrict"
+          >
+            {c.fromDistrictLabel}
+          </label>
+          <select
+            id="fromDistrict"
+            name="fromDistrict"
+            defaultValue={defaultValues?.fromDistrict ?? ""}
+            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
+          >
+            <option value="">{c.selectPlaceholder}</option>
+            {BISHKEK_DISTRICTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="toDistrict"
+          >
+            {c.toDistrictLabel}
+          </label>
+          <select
+            id="toDistrict"
+            name="toDistrict"
+            defaultValue={defaultValues?.toDistrict ?? ""}
+            className="w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-foreground outline-none transition focus:border-accent"
+          >
+            <option value="">{c.selectPlaceholder}</option>
+            {BISHKEK_DISTRICTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">{cm.heading}</p>
         <TripMap

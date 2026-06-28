@@ -88,6 +88,14 @@ export const ruContent = {
       "Этот номер уже привязан к другому аккаунту. Похоже, ты регистрировался раньше другим способом (Google или Telegram) — выйди и войди тем же способом, чтобы попасть в свой аккаунт.",
     uniqueTelegramError: "Этот Telegram username уже используется.",
   },
+  profileEdit: {
+    eyebrow: "Профиль",
+    title: "Изменить данные профиля",
+    description: "Обнови имя, телефон или Telegram username.",
+    back: "В кабинет",
+    submit: "Сохранить изменения",
+    pending: "Сохраняем...",
+  },
   driverOnboarding: {
     eyebrow: "Профиль водителя",
     title: "Добавь профиль водителя и машину, чтобы перейти к созданию первой поездки.",
@@ -234,6 +242,11 @@ export const ruContent = {
     confirmPending: "Подтверждаем...",
     reject: "Отклонить",
     rejectPending: "Отклоняем...",
+    markNoShow: "Не приехал",
+    markNoShowPending: "Отмечаем...",
+    markNoShowConfirm: "Отметить, что пассажир не приехал?",
+    markAttended: "Вернуть «приехал»",
+    markAttendedPending: "Возвращаем...",
   },
   driverTrip: {
     sectionTitle: "Управление поездкой",
@@ -329,9 +342,21 @@ export const ruContent = {
       title: "Поездка отменена",
       body: `Водитель отменил поездку ${p.route}. Твоя бронь отменена.`,
     }),
+    tripUpdated: (p: { route: string; time: string }) => ({
+      title: "Детали поездки изменились",
+      body: `Водитель изменил поездку ${p.route}. Новое время выезда: ${p.time}. Проверь детали на странице поездки.`,
+    }),
     tripReminder: (p: { route: string; time: string }) => ({
       title: "Скоро выезд",
       body: `Напоминание: поездка ${p.route} — выезд ${p.time}.`,
+    }),
+    reviewRequestPassenger: (p: { route: string }) => ({
+      title: "Оцените поездку",
+      body: `Поездка ${p.route} завершена. Оставьте отзыв о водителе на странице поездки.`,
+    }),
+    reviewRequestDriver: (p: { route: string }) => ({
+      title: "Оцените пассажиров",
+      body: `Поездка ${p.route} завершена. Оставьте отзыв о пассажирах на странице поездки.`,
     }),
   },
   myBookings: {
@@ -442,6 +467,9 @@ export const ruContent = {
     filterToday: "Сегодня",
     filterTomorrow: "Завтра",
     filterAll: "Все предстоящие",
+    filterFrom: "Откуда (район)",
+    filterTo: "Куда (район)",
+    filterAnyDistrict: "Любой район",
     empty: "По выбранному фильтру поездок пока нет.",
     seats: "Мест свободно",
     currency: "сом",

@@ -4,7 +4,12 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { BookingStatus } from "@prisma/client";
 import { ruContent } from "@/lib/content/ru";
-import { confirmBooking, rejectBooking } from "./driver-actions";
+import {
+  confirmBooking,
+  markAttended,
+  markNoShow,
+  rejectBooking,
+} from "./driver-actions";
 import { initialDriverActionState as INITIAL } from "./driver-state";
 
 const c = ruContent.driverBookings;
@@ -56,7 +61,11 @@ export function DriverBookings({ bookings }: { bookings: DriverBooking[] }) {
 function DriverBookingCard({ booking }: { booking: DriverBooking }) {
   const [confirmState, confirmAction] = useActionState(confirmBooking, INITIAL);
   const [rejectState, rejectAction] = useActionState(rejectBooking, INITIAL);
+  const [noShowState, noShowAction] = useActionState(markNoShow, INITIAL);
+  const [attendedState, attendedAction] = useActionState(markAttended, INITIAL);
   const isPending = booking.status === BookingStatus.PENDING;
+  const isCompleted = booking.status === BookingStatus.COMPLETED;
+  const isNoShow = booking.status === BookingStatus.NO_SHOW;
 
   return (
     <li className="rounded-3xl border border-line bg-surface p-5">
@@ -106,9 +115,42 @@ function DriverBookingCard({ booking }: { booking: DriverBooking }) {
         </div>
       )}
 
-      {(confirmState.error ?? rejectState.error) && (
+      {isCompleted && (
+        <div className="mt-4">
+          <form action={noShowAction}>
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <ActionButton
+              label={c.markNoShow}
+              pendingLabel={c.markNoShowPending}
+              confirmText={c.markNoShowConfirm}
+              className="w-full rounded-full border border-line py-2.5 text-sm font-semibold text-foreground transition hover:border-[rgb(185,28,28)] hover:text-[rgb(185,28,28)] disabled:opacity-60"
+            />
+          </form>
+        </div>
+      )}
+
+      {isNoShow && (
+        <div className="mt-4">
+          <form action={attendedAction}>
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <ActionButton
+              label={c.markAttended}
+              pendingLabel={c.markAttendedPending}
+              className="w-full rounded-full border border-line py-2.5 text-sm font-semibold text-foreground transition hover:border-accent hover:text-accent disabled:opacity-60"
+            />
+          </form>
+        </div>
+      )}
+
+      {(confirmState.error ??
+        rejectState.error ??
+        noShowState.error ??
+        attendedState.error) && (
         <p className="mt-2 text-xs text-[rgb(185,28,28)]">
-          {confirmState.error ?? rejectState.error}
+          {confirmState.error ??
+            rejectState.error ??
+            noShowState.error ??
+            attendedState.error}
         </p>
       )}
     </li>
@@ -118,15 +160,26 @@ function DriverBookingCard({ booking }: { booking: DriverBooking }) {
 function ActionButton({
   label,
   pendingLabel,
+  confirmText,
   className,
 }: {
   label: string;
   pendingLabel: string;
+  confirmText?: string;
   className: string;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className={className}>
+    <button
+      type="submit"
+      disabled={pending}
+      onClick={(event) => {
+        if (confirmText && !window.confirm(confirmText)) {
+          event.preventDefault();
+        }
+      }}
+      className={className}
+    >
       {pending ? pendingLabel : label}
     </button>
   );

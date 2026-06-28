@@ -1,13 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TripStatus } from "@prisma/client";
+import { BookingStatus, TripStatus } from "@prisma/client";
 
-const { db } = vi.hoisted(() => ({ db: { $transaction: vi.fn() } }));
+const { db } = vi.hoisted(() => ({
+  db: {
+    $transaction: vi.fn(),
+    booking: { findUnique: vi.fn(), update: vi.fn() },
+  },
+}));
 vi.mock("@/lib/db", () => ({ db }));
 vi.mock("@/server/notifications/events", () => ({
   notifyBookingRequest: vi.fn(),
 }));
 
-import { createBooking } from "./mutations";
+import {
+  createBooking,
+  markBookingAttended,
+  markBookingNoShow,
+} from "./mutations";
 
 type Tx = {
   trip: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
@@ -131,5 +140,61 @@ describe("createBooking conflicts", () => {
         data: { availableSeats: { decrement: 2 } },
       }),
     );
+  });
+});
+
+describe("no-show attendance", () => {
+  it("marks a completed booking as no-show", async () => {
+    db.booking.findUnique.mockResolvedValue({
+      status: BookingStatus.COMPLETED,
+      trip: { id: "t1", driverId: "driver" },
+    });
+    expect(await markBookingNoShow("driver", "b1")).toEqual({
+      ok: true,
+      tripId: "t1",
+    });
+    expect(db.booking.update).toHaveBeenCalledWith({
+      where: { id: "b1" },
+      data: { status: BookingStatus.NO_SHOW },
+    });
+  });
+
+  it("reverts a no-show back to completed", async () => {
+    db.booking.findUnique.mockResolvedValue({
+      status: BookingStatus.NO_SHOW,
+      trip: { id: "t1", driverId: "driver" },
+    });
+    expect(await markBookingAttended("driver", "b1")).toEqual({
+      ok: true,
+      tripId: "t1",
+    });
+    expect(db.booking.update).toHaveBeenCalledWith({
+      where: { id: "b1" },
+      data: { status: BookingStatus.COMPLETED },
+    });
+  });
+
+  it("forbids a driver who doesn't own the trip", async () => {
+    db.booking.findUnique.mockResolvedValue({
+      status: BookingStatus.COMPLETED,
+      trip: { id: "t1", driverId: "someone-else" },
+    });
+    expect(await markBookingNoShow("driver", "b1")).toEqual({
+      ok: false,
+      reason: "FORBIDDEN",
+    });
+    expect(db.booking.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects marking no-show on a booking that isn't completed", async () => {
+    db.booking.findUnique.mockResolvedValue({
+      status: BookingStatus.PENDING,
+      trip: { id: "t1", driverId: "driver" },
+    });
+    expect(await markBookingNoShow("driver", "b1")).toEqual({
+      ok: false,
+      reason: "INVALID_STATE",
+    });
+    expect(db.booking.update).not.toHaveBeenCalled();
   });
 });
